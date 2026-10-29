@@ -148,11 +148,13 @@ events as JSON so callers can inspect statuses and tool results.
 
 Tests: `python -m pytest python/packages/kagent-sdk/tests`.
 
-## Package generation
+## Package generation and release
 
 `make proto-lint proto-generate proto-breaking` regenerates the Python contracts
 with the repository's pinned Buf plugins. Generated files are not edited manually.
-The SDK requires exactly the matching `kagent-proto` version.
+The release workflow versions and builds both `kagent-proto` and `kagent-sdk`;
+the SDK requires exactly the matching `kagent-proto` version. Adding these
+packages to the workflow does not publish a release by itself.
 
 Build both packages into an external directory for local wheel verification:
 
