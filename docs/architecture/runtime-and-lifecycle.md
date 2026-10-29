@@ -193,20 +193,47 @@ leave an actor running until a surviving replica's next recovery scan; increasin
 the interval increases that delay and the time until its snapshot is available.
 Ordinary committed settlements do not wait for the recovery interval.
 
-An empty claim is followed by a check for unclaimed work on ready sessions. If
-dispatch, checkpoint creation, a lifecycle operation, or a row lock blocks that
-work, workers retry within one second until it becomes eligible or is superseded.
-Database errors also use this short retry. Sessions that are not READY and claimed
-work do not keep the short retry active. Idle workers make one claim attempt and
+An empty claim is followed by a check for unissued work on ready sessions. If
+dispatch, checkpoint creation, a lifecycle operation, a row lock, or a preparation
+lease blocks that work, workers retry within one second until it becomes eligible
+or is superseded. Database errors also use this short retry. Sessions that are not
+READY and issued work do not keep the short retry active. Idle workers make one claim attempt and
 one pending-work check per recovery interval, rather than querying every second.
 Other background workers and connection-pool idle settings still affect whether
 PostgreSQL can become idle.
 
-Unclaimed idle work survives API restarts. A claim for possibly issued runtime work
-never expires: losing the worker does not prove that the suspend stopped. Uncertain
-claims still block new work, but completed results remain readable. The recorded
-actor UID is checked before lifecycle calls; a same-name replacement cannot be
-adopted implicitly.
+Unclaimed idle work survives API restarts. A claim first enters `PREPARING`, with
+a lease bounded by two minutes and the claiming context's deadline. Preparation
+only reads the runtime revision and Actor and verifies the recorded UID. A failed
+preparation releases its own claim with a one-second retry delay; a crashed worker's
+preparation becomes claimable after its lease expires. New execution may supersede
+released preparation. Before sending `SuspendActor`, the worker must atomically
+change its still-current, unexpired claim to `ISSUED`. A stale preparer cannot issue
+runtime work, finish another executor's claim, or release it. This transition also
+records the Actor UID and the observed latest snapshot generation for diagnosis.
+
+`ISSUED` never expires and never permits another suspend request. Losing the worker
+or receiving an RPC error does not prove that suspension stopped. An ambiguous
+database response while authorizing the call also permits no runtime call. A known
+successful response is retried through the existing atomic snapshot completion
+write, without repeating runtime work. If the worker dies before that write commits,
+admission remains closed even when the Actor now reports a complete snapshot.
+Completed task results remain readable throughout.
+
+This is recovery of unissued preparation, not general recovery of unknown runtime
+outcomes. Substrate `v0.7.0-alpha1` identifies `SuspendActor` by atespace and name;
+it supplies neither an operation ID nor expected UID/generation preconditions.
+Its Actor lease serializes requests, and a request seeing `SUSPENDED` is a no-op,
+but a delayed request seeing a later `RUNNING` turn suspends that turn. The same UID
+and a newer durable snapshot do not prove which caller's request completed.
+Consequently recovery never clears an issued claim from Actor observation alone
+and never replays a suspend after a timeout. Full automated recovery requires a
+Substrate operation receipt and a generation fence enforced atomically with the
+runtime mutation. Read-side UID checks alone cannot provide that guarantee.
+
+Migration 2 classifies all pre-existing claims as `ISSUED`, without inventing missing
+Actor or snapshot evidence. Roll out this schema and worker together: older workers
+do not write the required preparation phase and must be drained before the upgrade.
 
 ```mermaid
 sequenceDiagram

@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kagent-dev/kagent/go/core/internal/database"
+	"github.com/kagent-dev/kagent/go/core/internal/substrate"
 	"github.com/kagent-dev/kagent/go/pkg/logging"
 )
 
@@ -73,13 +74,28 @@ func (w *ActorWorkflow) Start(ctx context.Context) error {
 }
 
 func (w *ActorWorkflow) quiesceIdleSession(ctx context.Context, work *database.SessionQuiescence) {
-	runtimeCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	snapshot, err := w.Quiesce(runtimeCtx, work.Session)
+	runtimeCtx, cancel := context.WithTimeout(ctx, database.RuntimeOperationTimeout)
+	defer cancel()
+	revision, actor, err := w.prepareQuiescence(runtimeCtx, work.Session)
+	if err != nil {
+		releaseCtx, releaseCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer releaseCancel()
+		err = errors.Join(err, w.store.ReleaseSessionQuiescence(releaseCtx, work))
+		logging.FromContext(ctx).ErrorContext(ctx, "prepare idle runtime boundary", "session_id", work.Session.Id, "version", work.Version, "error", err)
+		return
+	}
+	uid, generation := actor.GetMetadata().GetUid(), substrate.LatestActorSnapshot(actor).GetGeneration()
+	if err := w.store.IssueSessionQuiescence(runtimeCtx, work, uid, generation); err != nil {
+		// Even a lost database response cannot justify issuing a runtime call.
+		logging.FromContext(ctx).ErrorContext(ctx, "authorize idle runtime boundary", "session_id", work.Session.Id, "version", work.Version, "error", err)
+		return
+	}
+	snapshot, err := w.suspendQuiescence(runtimeCtx, revision, actor)
 	cancel()
 	if err != nil {
 		// No timeout-based takeover: the Substrate request may still complete.
 		// Keep admission closed until its outcome can be safely reconciled.
-		logging.FromContext(ctx).ErrorContext(ctx, "runtime boundary outcome unknown", "session_id", work.Session.Id, "version", work.Version, "error", err)
+		logging.FromContext(ctx).ErrorContext(ctx, "runtime boundary outcome unknown", "session_id", work.Session.Id, "version", work.Version, "actor_uid", uid, "snapshot_generation", generation, "error", err)
 		return
 	}
 	// Keep a known snapshot until its reference is stored. Retry database failures
