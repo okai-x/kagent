@@ -252,7 +252,7 @@ func TestQuiescenceRetriesTemporaryBlockers(t *testing.T) {
 	}
 }
 
-func TestQuiescenceCancellationRetainsClaim(t *testing.T) {
+func TestQuiescenceCancellationReleasesUnissuedClaim(t *testing.T) {
 	store, session := lifecycleFixture(t)
 	base := &lifecycleTestActors{actors: map[string]*ateapipb.Actor{}}
 	session, err := NewActorWorkflow(store, base, make(chan struct{}, 1), time.Hour).Create(t.Context(), session)
@@ -276,5 +276,8 @@ func TestQuiescenceCancellationRetainsClaim(t *testing.T) {
 	require.ErrorIs(t, err, database.ErrNotFound)
 	pending, err := store.HasPendingSessionQuiescence(t.Context())
 	require.NoError(t, err)
-	require.False(t, pending, "a retained claim must not be treated as retryable work")
+	require.True(t, pending, "canceled read-only preparation must remain retryable")
+	writes := &observedQuiescenceStore{lifecycleTestStore: store}
+	startQuiescenceWorker(t, NewActorWorkflow(writes, base, make(chan struct{}, 1), time.Hour))
+	require.Eventually(t, func() bool { return writes.finished.Load() == 1 }, 5*time.Second, 10*time.Millisecond)
 }

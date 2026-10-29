@@ -57,6 +57,9 @@ type Revision struct {
 	ConfigJSON  []byte
 	AgentCard   *a2apb.AgentCard
 	SkillImages []SkillImage
+	// MemoryEnabled is derived from validated ConfigJSON, which already enters
+	// the digest. It authorizes access to the shared Agent/owner memory store.
+	MemoryEnabled bool
 
 	// WorkerPoolName, SandboxClass and SnapshotLocation control Substrate placement and state.
 	WorkerPoolName   string

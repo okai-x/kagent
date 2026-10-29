@@ -826,6 +826,8 @@ func requireSettledRuntime(ctx context.Context, db dbExecutor, historyID uuid.UU
 		    AND (NOT published OR (quiescence_pending AND quiescence_executor_id IS NOT NULL)))
 		    OR EXISTS (SELECT 1 FROM session WHERE history_id = $1 AND dispatch_expires_at > clock_timestamp()
 		        AND ($2::text = '' OR dispatch_id::text <> $2))
+		    OR EXISTS (SELECT 1 FROM session_workspace_access a JOIN session s ON s.id = a.session_id
+		        WHERE s.history_id = $1 AND a.phase <> 'RELEASED')
 	`, pgx.RowTo[bool], historyID, dispatchID)
 	if err != nil {
 		return err

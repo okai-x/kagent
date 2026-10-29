@@ -1,7 +1,7 @@
 # Standalone Sandboxes
 
 A `Sandbox` is an owner-scoped scratch environment for running commands and
-working with files. Users and agents create one from a `SandboxTemplate`, use
+working with files. Authenticated product services or users create one from a `SandboxTemplate`, use
 its process and file APIs, and delete it or let its lifetime expire. PostgreSQL
 stores its identity and lifecycle; a Substrate Actor runs the guest.
 
@@ -20,9 +20,13 @@ policy. Both resources use `RuntimeEnvVar`, `RuntimeSubstratePolicy`, and
 `RuntimeSnapshotPolicy` from `go/api/v1alpha3/runtime_types.go` for their shared
 configuration. Neither resource references or inherits from the other.
 
-Sessions do not run the sandbox guest. An agent can create an independent Sandbox
-through MCP, using the same service as a human caller. Its conversation and the
-sandbox's lifetime remain independent. Session task admission, checkpoints, and
+Sessions do not run the sandbox guest. A product service can bind a Sandbox to a
+Session at creation with `CreateSandboxRequest.session_id`. The immutable binding
+is checked against the same authenticated owner and stored as a foreign key.
+Existing and explicitly unbound Sandboxes remain accessible to their product owner,
+but are not accessible to runtime Actors. A bound Actor may use only Sandboxes
+belonging to its verified Session, even when many Sessions share one product owner.
+The conversation and sandbox lifetime remain independent. Session task admission, checkpoints, and
 automatic quiescence remain governed by the [Session lifecycle](runtime-and-lifecycle.md).
 
 Shared persistence and Substrate lifecycle components implement common
@@ -127,13 +131,26 @@ translating Kubernetes inputs.
 
 ## Lifecycle and recovery
 
-`SandboxService` exposes Create, Get, List, Suspend, Resume, and Delete. Creation
+`SandboxService` exposes Create, Get, List, Renew, Suspend, Resume, and Delete. Creation
 requires an authenticated owner, access to the named template, and a stable
 request ID. Creation atomically pins the selected revision and expiration.
 Concurrent requests use the unique creator/request-ID constraint and read the
 winning insert, as Session creation does; there is no per-owner advisory lock or
 sandbox count limit. Retrying with the same request ID and identical input returns the
 same resource; it cannot allocate another Actor or extend the original lifetime.
+
+The product owner can call `RenewSandbox` with an absolute `expires_at` deadline
+before expiration. Repeating a deadline is idempotent; it never shortens the lease
+and cannot extend beyond the operator's maximum TTL from now. Expired or deleting
+Sandboxes cannot be revived by renewal. Runtime Actors cannot create, renew,
+suspend, resume, or delete Sandboxes; the product service owns these operations.
+
+Sandbox renewal does not extend Session idle retention. Products owning long-lived
+workspaces must set controller `sessions.idleTtl: 0s` and explicitly retire their
+Sessions; otherwise the independent idle sweep can delete the agent conversation
+runtime while its Sandbox remains live. A deleted Session with a Sandbox binding
+retains its tombstone and creation receipt to preserve that binding; it cannot be
+recreated by retrying its original request. This retention does not resume it.
 
 Sessions and Sandboxes use the shared `RuntimeState` and `RuntimeOperation`
 protobuf enums. State values include `CREATING`, `READY`, `SUSPENDED`, `FAILED`,
@@ -206,7 +223,7 @@ The apiserver registers three services on the same listener:
 
 | Service | Operations |
 | --- | --- |
-| `kagent.api.v1.SandboxService` | Create, Get, List, Suspend, Resume, Delete |
+| `kagent.api.v1.SandboxService` | Create, Get, List, Renew, Suspend, Resume, Delete |
 | `ateenv.v1alpha.ProcessService` | StartProcess, GetProcess, SignalProcess, StreamProcessOutput |
 | `ateenv.v1alpha.FileSystemService` | ReadFile, WriteFile |
 
@@ -244,11 +261,25 @@ the guest image it was prepared with, so an env upgrade that changes the guest
 messages requires deleting existing sandboxes.
 
 Resource authorization and owner checks apply before routing guest traffic. Agent
-share tokens grant no sandbox access. An agent calling MCP operates under the
-identity authenticated by that MCP connection; acting for the invoking user
-requires the existing credential-propagation configuration. For the Go kagent
-runtime, `runtime.token_propagation.enabled=true` opts trusted configured MCP servers into
-receiving the caller's credentials and identity.
+share tokens grant no sandbox access. Runtime Actors authenticate using a verified
+Substrate Actor JWT and its current Session binding. Get and guest operations
+require the stored Sandbox `session_id` to match; List filters by that binding
+before pagination. Caller-provided Sandbox IDs, user headers, and prompt text
+cannot expand access. Guest forwarding revalidates the Actor's Session and does
+not forward its JWT as a product credential.
+
+Sandbox-bound Sessions cannot use the shared Agent/owner Memory APIs, including
+after their Sandbox is deleted. This prevents separate workspaces under one
+product service identity from sharing memory. Binding lookup errors fail closed.
+Unbound Sessions additionally require an explicitly Memory-enabled pinned runtime
+revision; single-Actor workspaces without that policy cannot reach shared Memory.
+Trusted product callers retain their existing Memory management policy.
+
+The controller-origin egress policy injects the Actor JWT and prevents overriding
+that credential. The MCP URL must have the same origin as the runtime's
+`controlPlaneUrl`; the standard Helm registration uses that origin. An alternate
+origin or alias requires explicit secure configuration and must not forward a
+product service-account token into agent-controlled tool calls.
 
 The existing `/mcp` endpoint exposes template discovery, sandbox lifecycle,
 process execution, output reads, and file transfer. All sandbox tools call the
@@ -274,13 +305,13 @@ tools:
         kind: RemoteMCPServer
         name: kagent-api
       tools:
-        - create_sandbox
-        - delete_sandbox
+        - get_sandbox
+        - start_sandbox_process
 ```
 
 Bindings reference a server in the AgentTemplate's namespace; other namespaces
-need their own registration. Caller credential propagation still needs to be
-configured on the Harness as described above.
+need their own registration at the controller origin described above. Product
+services create the bound Sandbox before the Actor invokes these tools.
 
 Each StartProcess call launches a new command. There is no process request ID or
 durable receipt. After a timeout or lost response, callers must account for the
@@ -330,7 +361,7 @@ defines common runtime tables with resource-specific extension tables:
 | `agent_definition`, `sandbox_template_definition` | Desired and latest-successful revision pointers |
 | `runtime_instance` | Identity, owner, create request ID, revision pin, state, operation generation, and bounded executor claim |
 | `session` | Complete Session protobuf, A2A/history bindings, checkpoint pins, and agent execution coordination |
-| `sandbox` | Complete Sandbox protobuf, template identity, create receipt, and expiration |
+| `sandbox` | Complete Sandbox protobuf, template identity, create receipt, expiration, and immutable Session binding |
 
 Base and extension rows are written in one transaction. Primary and foreign keys
 preserve references; store operations verify resource kinds at write time.

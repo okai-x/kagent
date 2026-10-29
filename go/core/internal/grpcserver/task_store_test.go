@@ -694,8 +694,8 @@ func createTaskStoreSession(t *testing.T, store *database.Client) *apiv1.Session
 	t.Helper()
 	revision := database.RuntimeRevision{
 		Revision: "revision-1", Namespace: "team-a", AgentName: "assistant", AgentUID: "template-uid",
-		SourceSnapshot: []byte("{}"),
-		AgentCard:      &a2apb.AgentCard{Name: "assistant"}, EgressDestinations: []string{},
+		SourceSnapshot: []byte("{}"), MemoryEnabled: true,
+		AgentCard: &a2apb.AgentCard{Name: "assistant"}, EgressDestinations: []string{},
 		ActorTemplateAtespace: "team-a", ActorTemplateName: "assistant-kagent-revision", ActorTemplateUID: "actor-template-uid",
 	}
 	upsertErr := store.UpsertAgentDefinition(t.Context(), database.AgentDefinition{

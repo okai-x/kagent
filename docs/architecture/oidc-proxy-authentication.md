@@ -111,6 +111,22 @@ The principal ID combines the configured authority and the verified service-acco
 UID, so token rotation preserves identity and recreation changes it. Use distinct
 authorities when identities from multiple clusters share storage.
 
+For a backend used exclusively by trusted product services, set
+`config.server.auth.mode: service-account` and configure
+`config.server.auth.serviceAccount.authority`. Startup rejects this mode without
+an authority. Ordinary user credentials, anonymous calls to authenticated APIs,
+and caller-selected identity headers are rejected. TokenReview-verified service
+accounts and signed, session-bound Substrate Actor callbacks remain supported on
+native gRPC, HTTP MCP, and A2A. Explicitly public methods such as health/version
+retain their existing policy. The other authentication modes are unchanged.
+
+This mode authenticates any local service account whose token passes TokenReview
+for `kagent-invocation`; it is not a service-account allowlist. Restrict controller
+network access and token issuance to trusted product services. The shipped
+controller's ordinary resource authorizer remains permissive; product services
+must enforce their own end-user permissions and must not expose controller
+credentials or direct access to end users or agent processes.
+
 Tokens with a `kubernetes.io` claim or a `system:serviceaccount:` subject always
 take this verifier when enabled. Verification failure never falls back to the
 trusted proxy, including for federated credentials from another cluster. Unverified
@@ -154,7 +170,7 @@ differs.
 | --- | --- | --- |
 | `oauth2-proxy.enabled` | `false` | Install the authentication proxy |
 | `oauth2-proxy.config.existingSecret` | Empty | Reference client and cookie credentials |
-| `config.server.auth.mode` | `insecure` | Select `insecure` or `trusted-proxy` |
+| `config.server.auth.mode` | `insecure` | Select `insecure`, `trusted-proxy`, or `service-account` |
 | `config.server.auth.userIdClaim` | Empty (`sub`) | JWT identity claim, falling back to `sub` |
 | `config.server.auth.serviceAccount` | Unset | Opt in to local TokenReview authentication with a configured authority |
 | `ui.auth.ssoRedirectPath` | `/oauth2/start` | Start or restart browser sign-in |

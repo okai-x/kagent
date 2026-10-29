@@ -119,6 +119,11 @@ func (a *testActors) observedCalls() []string {
 }
 
 func guestFixture(t *testing.T) (*sandboxservice.Service, context.Context, *testActors, func() http.Header) {
+	service, ctx, actors, headers, _ := configuredGuestFixture(t, nil)
+	return service, ctx, actors, headers
+}
+
+func configuredGuestFixture(t *testing.T, configure func(*database.Client) (auth.AuthProvider, auth.Authorizer)) (*sandboxservice.Service, context.Context, *testActors, func() http.Header, *database.Client) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.WithoutCancel(t.Context()))
 	t.Cleanup(cancel)
@@ -130,6 +135,11 @@ func guestFixture(t *testing.T) (*sandboxservice.Service, context.Context, *test
 	require.NoError(t, err)
 	t.Cleanup(pool.Close)
 	store := database.NewClient(pool, "public")
+	var authenticator auth.AuthProvider = testAuth{}
+	var authorizer auth.Authorizer = auth.NoopAuthorizer{}
+	if configure != nil {
+		authenticator, authorizer = configure(store)
+	}
 	upsertErr := store.UpsertSandboxTemplateDefinition(ctx, database.SandboxTemplateDefinition{Namespace: "team-a", SandboxTemplateName: "scratch", SandboxTemplateUID: "template-uid", DesiredRevision: "revision"})
 	require.NoError(t, upsertErr)
 	require.NoError(t, store.RecordSandboxRevision(ctx, database.SandboxRevision{
@@ -158,18 +168,18 @@ func guestFixture(t *testing.T) (*sandboxservice.Service, context.Context, *test
 	router.Config.Protocols = protocols
 	router.Start()
 	t.Cleanup(router.Close)
-	guests, err := sandboxservice.NewGuestDialer(router.URL, testAuth{})
+	guests, err := sandboxservice.NewGuestDialer(router.URL, authenticator)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, guests.Close()) })
 	actors := &testActors{}
-	service, err := sandboxservice.NewService(sandboxservice.Config{Store: store, Kube: kube, Authorizer: auth.NoopAuthorizer{}, Actors: actors, Guests: guests,
+	service, err := sandboxservice.NewService(sandboxservice.Config{Store: store, Kube: kube, Authorizer: authorizer, Actors: actors, Guests: guests,
 		DefaultTTL: time.Hour, MaxTTL: 24 * time.Hour, ExpirationPollInterval: time.Second})
 	require.NoError(t, err)
 	return service, auth.AuthSessionTo(t.Context(), testSession("alice")), actors, func() http.Header {
 		mu.Lock()
 		defer mu.Unlock()
 		return lastHeaders.Clone()
-	}
+	}, store
 }
 
 func createRequest() *apiv1.CreateSandboxRequest {

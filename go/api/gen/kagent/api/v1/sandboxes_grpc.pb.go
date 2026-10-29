@@ -24,6 +24,7 @@ const (
 	SandboxService_ListSandboxes_FullMethodName  = "/kagent.api.v1.SandboxService/ListSandboxes"
 	SandboxService_SuspendSandbox_FullMethodName = "/kagent.api.v1.SandboxService/SuspendSandbox"
 	SandboxService_ResumeSandbox_FullMethodName  = "/kagent.api.v1.SandboxService/ResumeSandbox"
+	SandboxService_RenewSandbox_FullMethodName   = "/kagent.api.v1.SandboxService/RenewSandbox"
 	SandboxService_DeleteSandbox_FullMethodName  = "/kagent.api.v1.SandboxService/DeleteSandbox"
 )
 
@@ -47,6 +48,7 @@ type SandboxServiceClient interface {
 	ListSandboxes(ctx context.Context, in *ListSandboxesRequest, opts ...grpc.CallOption) (*ListSandboxesResponse, error)
 	SuspendSandbox(ctx context.Context, in *SuspendSandboxRequest, opts ...grpc.CallOption) (*SuspendSandboxResponse, error)
 	ResumeSandbox(ctx context.Context, in *ResumeSandboxRequest, opts ...grpc.CallOption) (*ResumeSandboxResponse, error)
+	RenewSandbox(ctx context.Context, in *RenewSandboxRequest, opts ...grpc.CallOption) (*RenewSandboxResponse, error)
 	DeleteSandbox(ctx context.Context, in *DeleteSandboxRequest, opts ...grpc.CallOption) (*DeleteSandboxResponse, error)
 }
 
@@ -108,6 +110,16 @@ func (c *sandboxServiceClient) ResumeSandbox(ctx context.Context, in *ResumeSand
 	return out, nil
 }
 
+func (c *sandboxServiceClient) RenewSandbox(ctx context.Context, in *RenewSandboxRequest, opts ...grpc.CallOption) (*RenewSandboxResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenewSandboxResponse)
+	err := c.cc.Invoke(ctx, SandboxService_RenewSandbox_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sandboxServiceClient) DeleteSandbox(ctx context.Context, in *DeleteSandboxRequest, opts ...grpc.CallOption) (*DeleteSandboxResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteSandboxResponse)
@@ -138,6 +150,7 @@ type SandboxServiceServer interface {
 	ListSandboxes(context.Context, *ListSandboxesRequest) (*ListSandboxesResponse, error)
 	SuspendSandbox(context.Context, *SuspendSandboxRequest) (*SuspendSandboxResponse, error)
 	ResumeSandbox(context.Context, *ResumeSandboxRequest) (*ResumeSandboxResponse, error)
+	RenewSandbox(context.Context, *RenewSandboxRequest) (*RenewSandboxResponse, error)
 	DeleteSandbox(context.Context, *DeleteSandboxRequest) (*DeleteSandboxResponse, error)
 	mustEmbedUnimplementedSandboxServiceServer()
 }
@@ -163,6 +176,9 @@ func (UnimplementedSandboxServiceServer) SuspendSandbox(context.Context, *Suspen
 }
 func (UnimplementedSandboxServiceServer) ResumeSandbox(context.Context, *ResumeSandboxRequest) (*ResumeSandboxResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResumeSandbox not implemented")
+}
+func (UnimplementedSandboxServiceServer) RenewSandbox(context.Context, *RenewSandboxRequest) (*RenewSandboxResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenewSandbox not implemented")
 }
 func (UnimplementedSandboxServiceServer) DeleteSandbox(context.Context, *DeleteSandboxRequest) (*DeleteSandboxResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSandbox not implemented")
@@ -278,6 +294,24 @@ func _SandboxService_ResumeSandbox_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SandboxService_RenewSandbox_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenewSandboxRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SandboxServiceServer).RenewSandbox(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SandboxService_RenewSandbox_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SandboxServiceServer).RenewSandbox(ctx, req.(*RenewSandboxRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SandboxService_DeleteSandbox_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteSandboxRequest)
 	if err := dec(in); err != nil {
@@ -322,6 +356,10 @@ var SandboxService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResumeSandbox",
 			Handler:    _SandboxService_ResumeSandbox_Handler,
+		},
+		{
+			MethodName: "RenewSandbox",
+			Handler:    _SandboxService_RenewSandbox_Handler,
 		},
 		{
 			MethodName: "DeleteSandbox",

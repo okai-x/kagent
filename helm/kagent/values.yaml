@@ -157,6 +157,9 @@ config:
     auth:
       mode: insecure
       # Opt in to Kubernetes TokenReview authentication independently of the mode.
+      # For a backend used only by product services, set mode: service-account.
+      # That mode requires serviceAccount.authority and rejects ordinary users;
+      # verified Substrate Actor callbacks remain available.
       # serviceAccount:
       #   authority: kubernetes
     grpcReflection: false

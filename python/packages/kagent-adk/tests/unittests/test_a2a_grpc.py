@@ -5,6 +5,7 @@ from google.protobuf.json_format import ParseDict
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 from kagent.core._runtime_config import RuntimeConfig
 from kagent.core.a2a import KAgentGrpcServerCallContextBuilder
+from kagent.runtime.v1 import workspace_pb2, workspace_pb2_grpc
 
 import kagent.adk._a2a as _a2a
 from kagent.adk import KAgentApp
@@ -121,3 +122,46 @@ async def test_grpc_ingress_is_traced_except_health(monkeypatch):
     assert span.name == "/lf.a2a.v1.A2AService/ListTasks"
     assert span.context.trace_id == trace_id
     assert span.parent.span_id == 0x00F067AA0BA902B7
+
+
+async def test_workspace_service_is_disabled_without_controller():
+    app = make_app().build(local=True)
+    async with app.router.lifespan_context(app):
+        async with grpc.aio.insecure_channel(f"127.0.0.1:{app.state.a2a_grpc_port}") as channel:
+            call = workspace_pb2_grpc.WorkspaceServiceStub(channel).ReadFile(
+                workspace_pb2.ReadFileRequest(grant_id="test-grant", path="result.glb")
+            )
+            with pytest.raises(grpc.aio.AioRpcError) as error:
+                await call.read()
+            assert error.value.code() is grpc.StatusCode.UNIMPLEMENTED
+
+
+async def test_workspace_registration_requires_authorization_and_closes_client(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from kagent.core import AsyncControllerClient
+
+    class DenyAccess(workspace_pb2_grpc.WorkspaceAccessServiceServicer):
+        async def AuthorizeRead(self, request, context):
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, "read denied")
+
+    control = grpc.aio.server()
+    workspace_pb2_grpc.add_WorkspaceAccessServiceServicer_to_server(DenyAccess(), control)
+    port = control.add_insecure_port("127.0.0.1:0")
+    await control.start()
+    client = AsyncControllerClient(f"http://127.0.0.1:{port}")
+    monkeypatch.setattr(_a2a, "AsyncControllerClient", lambda *args, **kwargs: client)
+    monkeypatch.setattr(_a2a.KAgentTokenService, "_read_kagent_token", AsyncMock(return_value=None))
+    app = make_app().build()
+    try:
+        async with app.router.lifespan_context(app):
+            async with grpc.aio.insecure_channel(f"127.0.0.1:{app.state.a2a_grpc_port}") as channel:
+                call = workspace_pb2_grpc.WorkspaceServiceStub(channel).ReadFile(
+                    workspace_pb2.ReadFileRequest(grant_id="test-grant", path="result.glb")
+                )
+                with pytest.raises(grpc.aio.AioRpcError) as error:
+                    await call.read()
+                assert error.value.code() is grpc.StatusCode.PERMISSION_DENIED
+        assert client.channel.get_state() is grpc.ChannelConnectivity.SHUTDOWN
+    finally:
+        await control.stop(grace=0)

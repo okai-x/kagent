@@ -185,7 +185,7 @@ func TestSandboxConcurrentCreation(t *testing.T) {
 			}
 			require.Equal(t, tc.wantCount, created)
 			require.Equal(t, tc.wantErrors, conflicts)
-			instances, err := client.ListSandboxes(ctx, input.Creator, "", 100, nil)
+			instances, err := client.ListSandboxes(ctx, input.Creator, "", 100, nil, "")
 			require.NoError(t, err)
 			require.Len(t, instances, tc.wantCount)
 		})

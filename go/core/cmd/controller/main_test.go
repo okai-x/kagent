@@ -43,6 +43,8 @@ func TestControllerAuthenticator(t *testing.T) {
 		wantConfigError, wantAuthError       bool
 	}{
 		{name: "default", mode: "insecure", wantUser: "admin@kagent.dev"},
+		{name: "machine mode rejects anonymous", mode: "service-account", wantAuthError: true},
+		{name: "machine mode rejects user JWT", mode: "service-account", payload: `{"sub":"subject"}`, wantAuthError: true},
 		{name: "subject", mode: "trusted-proxy", payload: `{"sub":"subject","email":"user@example.com"}`, wantUser: "subject"},
 		{name: "email", mode: "trusted-proxy", claim: "email", payload: `{"sub":"subject","email":"user@example.com"}`, wantUser: "user@example.com"},
 		{name: "fallback", mode: "trusted-proxy", claim: "email", payload: `{"sub":"subject"}`, wantUser: "subject"},

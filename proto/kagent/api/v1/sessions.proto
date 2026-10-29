@@ -24,6 +24,33 @@ service SessionService {
   rpc CreateSessionShare(CreateSessionShareRequest) returns (CreateSessionShareResponse);
   rpc ListSessionShares(ListSessionSharesRequest) returns (ListSessionSharesResponse);
   rpc RevokeSessionShare(RevokeSessionShareRequest) returns (RevokeSessionShareResponse);
+  // Downloads a regular file from the latest settled terminal workspace.
+  // Requires owner access; shares and runtime Actors cannot use this method.
+  // Reading coordinates with execution and runtime suspension. Success is only
+  // established by the final OK status; discard partial bytes on any failure.
+  rpc ReadWorkspaceFile(ReadWorkspaceFileRequest) returns (stream ReadWorkspaceFileResponse);
+}
+
+message ReadWorkspaceFileRequest {
+  string session_id = 1 [(buf.validate.field).string.uuid = true];
+  // Relative to /data/workspace. Symlinks and non-regular files are rejected.
+  string path = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 4096
+    pattern: "^[^\\x00\\\\]+$"
+  }];
+  // Reject a stale request rather than exporting a different turn's files.
+  string expected_head_task_id = 3 [(buf.validate.field).string.min_len = 1];
+  option (buf.validate.message).cel = {
+    id: "workspace.relative_path"
+    message: "path must be a canonical relative workspace path"
+    expression: "!this.path.startsWith('/') && !this.path.endsWith('/') && !this.path.contains('//') && !this.path.matches('(^|/)\\\\.\\\\.?(/|$)')"
+  };
+}
+
+message ReadWorkspaceFileResponse {
+  // The entire file is bounded to 64 MiB. Empty files have a successful empty stream.
+  bytes chunk = 1;
 }
 
 message Failure {

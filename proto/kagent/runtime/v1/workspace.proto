@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package kagent.runtime.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/kagent-dev/kagent/go/api/gen/kagent/runtime/v1;runtimev1";
+
+// WorkspaceService runs inside an Agent Actor. The private transport is not an
+// authorization boundary: every request must first consume its controller grant
+// through WorkspaceAccessService using this runtime's verified Actor identity.
+service WorkspaceService {
+  rpc ReadFile(ReadFileRequest) returns (stream ReadFileResponse);
+}
+
+// WorkspaceAccessService runs on the controller and requires an Actor JWT.
+// A grant is single-use and bound to an admitted read's Session, immutable Actor
+// UID, head task, exact path and deadline. User and share tokens cannot consume it.
+service WorkspaceAccessService {
+  rpc AuthorizeRead(AuthorizeReadRequest) returns (AuthorizeReadResponse);
+}
+
+message ReadFileRequest {
+  string grant_id = 1 [(buf.validate.field).string.uuid = true];
+  string path = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 4096
+    pattern: "^[^\\x00\\\\]+$"
+  }];
+  option (buf.validate.message).cel = {
+    id: "runtime.workspace_relative_path"
+    message: "path must be a canonical relative workspace path"
+    expression: "!this.path.startsWith('/') && !this.path.endsWith('/') && !this.path.contains('//') && !this.path.matches('(^|/)\\\\.\\\\.?(/|$)')"
+  };
+}
+
+message ReadFileResponse {
+  bytes chunk = 1;
+}
+
+message AuthorizeReadRequest {
+  string grant_id = 1 [(buf.validate.field).string.uuid = true];
+  // Must exactly match the path recorded in the grant.
+  string path = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 4096
+  }];
+}
+
+message AuthorizeReadResponse {
+  // The runtime must stop reading once the authorization expires.
+  google.protobuf.Timestamp expires_at = 1 [(buf.validate.field).required = true];
+}

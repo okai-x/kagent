@@ -443,6 +443,7 @@ func (r *Reconciler) reconcileAgent(ctx context.Context, key string) error {
 		Revision: target.RevisionID.String(), Namespace: definition.Namespace,
 		AgentName: definition.AgentName, AgentUID: definition.AgentUID,
 		SourceSnapshot: target.Revision.Provenance, AgentCard: target.Revision.AgentCard,
+		MemoryEnabled:           target.Revision.MemoryEnabled,
 		EgressDestinations:      target.Revision.EgressDestinations,
 		Credentials:             target.Revision.Credentials,
 		TokenPassthroughTargets: target.Revision.TokenPassthroughTargets,

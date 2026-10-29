@@ -56,15 +56,22 @@ type ToolDiscoverer interface {
 	ListTools(context.Context, toolservice.MCPServerRef) ([]toolservice.MCPAppTool, error)
 }
 
+// BuiltinCatalog describes the tools registered at this controller's MCP endpoint.
+type BuiltinCatalog struct {
+	Endpoint string
+	Tools    []toolservice.MCPAppTool
+}
+
 // Reconciler publishes RemoteMCPServer discovery results to its status.
 type Reconciler struct {
 	client     client.Client
 	discoverer ToolDiscoverer
 	catalog    *toolcatalog.Publisher
+	builtin    BuiltinCatalog
 }
 
-func New(client client.Client, discoverer ToolDiscoverer, catalog toolcatalog.Store) *Reconciler {
-	return &Reconciler{client: client, discoverer: discoverer, catalog: toolcatalog.NewPublisher(catalog)}
+func New(client client.Client, discoverer ToolDiscoverer, catalog toolcatalog.Store, builtin BuiltinCatalog) *Reconciler {
+	return &Reconciler{client: client, discoverer: discoverer, catalog: toolcatalog.NewPublisher(catalog), builtin: builtin}
 }
 
 func (r *Reconciler) SetupWithManager(manager ctrl.Manager) error {
@@ -101,9 +108,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 		return reconcile.Result{RequeueAfter: refreshInterval}, nil
 	}
 
-	tools, err := r.discoverer.ListTools(ctx, toolservice.MCPServerRef{
-		Ref: request.NamespacedName, GroupKind: remoteGroupKind,
-	})
+	tools, err := r.listTools(ctx, server)
 	if err != nil {
 		statusErr := r.updateStatus(ctx, server, nil, metav1.ConditionFalse, "DiscoveryFailed", err.Error())
 		catalogErr := r.updateCatalog(ctx, server, nil, false)
@@ -132,6 +137,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 		return reconcile.Result{}, fmt.Errorf("update RemoteMCPServer tool catalog: %w", err)
 	}
 	return reconcile.Result{RequeueAfter: refreshInterval}, nil
+}
+
+func (r *Reconciler) listTools(ctx context.Context, server *v1alpha3.RemoteMCPServer) ([]toolservice.MCPAppTool, error) {
+	if r.builtin.Endpoint != "" && server.Spec.URL == r.builtin.Endpoint && server.Spec.Protocol == v1alpha3.RemoteMCPServerProtocolStreamableHttp {
+		return r.builtin.Tools, nil
+	}
+	return r.discoverer.ListTools(ctx, toolservice.MCPServerRef{
+		Ref: client.ObjectKeyFromObject(server), GroupKind: remoteGroupKind,
+	})
 }
 
 func discoveryDisabledMessage(server *v1alpha3.RemoteMCPServer) string {

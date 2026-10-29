@@ -55,3 +55,11 @@ func (s *sandboxServer) DeleteSandbox(ctx context.Context, request *apiv1.Delete
 func (s *sandboxServer) ListSandboxes(ctx context.Context, request *apiv1.ListSandboxesRequest) (*apiv1.ListSandboxesResponse, error) {
 	return s.service.List(ctx, request)
 }
+
+func (s *sandboxServer) RenewSandbox(ctx context.Context, request *apiv1.RenewSandboxRequest) (*apiv1.RenewSandboxResponse, error) {
+	result, err := s.service.Renew(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return &apiv1.RenewSandboxResponse{Sandbox: result}, nil
+}

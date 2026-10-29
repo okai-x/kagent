@@ -23,16 +23,27 @@ import (
 )
 
 type memoryStore struct {
-	bindingErr   error
-	stored       []*database.Memory
-	searchResult []database.AgentMemorySearchResult
-	searchLimit  int
-	listResult   []database.Memory
-	err          error
-	deletedAgent string
-	deletedUser  string
-	readAgent    string
-	readUser     string
+	bindingErr    error
+	revisionErr   error
+	memoryEnabled bool
+	unpinned      bool
+	stored        []*database.Memory
+	searchResult  []database.AgentMemorySearchResult
+	searchLimit   int
+	listResult    []database.Memory
+	err           error
+	deletedAgent  string
+	deletedUser   string
+	readAgent     string
+	readUser      string
+}
+
+func (*memoryStore) HasSessionSandboxBinding(context.Context, string) (bool, error) {
+	return false, nil
+}
+
+func (store *memoryStore) GetRuntimeRevision(context.Context, string) (*database.RuntimeRevision, error) {
+	return &database.RuntimeRevision{MemoryEnabled: store.memoryEnabled}, store.revisionErr
 }
 
 func (store *memoryStore) StoreAgentMemories(_ context.Context, memories ...*database.Memory) error {
@@ -65,7 +76,7 @@ func (store *memoryStore) DeleteAgentMemory(_ context.Context, agentName, userID
 
 func TestAddDefaultsMetadataAndTTL(t *testing.T) {
 	now := time.Date(2026, time.August, 3, 10, 0, 0, 0, time.UTC)
-	store := &memoryStore{}
+	store := &memoryStore{memoryEnabled: true}
 	service := NewService(store, auth.NoopAuthorizer{}, WithClock(func() time.Time { return now }))
 
 	id, err := service.Add(memoryContext(t), Input{
@@ -81,7 +92,7 @@ func TestAddDefaultsMetadataAndTTL(t *testing.T) {
 }
 
 func TestAddAndBatchValidation(t *testing.T) {
-	service := NewService(&memoryStore{}, auth.NoopAuthorizer{})
+	service := NewService(&memoryStore{memoryEnabled: true}, auth.NoopAuthorizer{})
 
 	_, err := service.Add(memoryContext(t), Input{Vector: vector(16, 1)})
 	assert.True(t, serviceerrors.IsCode(err, serviceerrors.CodeInvalidArgument))
@@ -100,7 +111,7 @@ func TestAddAndBatchValidation(t *testing.T) {
 
 func TestSearchDefaultsFiltersAndNormalizesMetadata(t *testing.T) {
 	createdAt := time.Date(2026, time.August, 3, 10, 0, 0, 0, time.UTC)
-	store := &memoryStore{searchResult: []database.AgentMemorySearchResult{
+	store := &memoryStore{memoryEnabled: true, searchResult: []database.AgentMemorySearchResult{
 		{Memory: database.Memory{ID: "high", Content: "keep", Metadata: `{"source":"test"}`, CreatedAt: createdAt}, Score: 0.9},
 		{Memory: database.Memory{ID: "invalid", Content: "normalize", Metadata: "{"}, Score: 0.8},
 		{Memory: database.Memory{ID: "low", Content: "drop"}, Score: 0.4},
@@ -120,7 +131,7 @@ func TestSearchDefaultsFiltersAndNormalizesMetadata(t *testing.T) {
 }
 
 func TestListDeleteAndStoreErrors(t *testing.T) {
-	store := &memoryStore{listResult: []database.Memory{{ID: "memory-1"}}}
+	store := &memoryStore{memoryEnabled: true, listResult: []database.Memory{{ID: "memory-1"}}}
 	service := NewService(store, auth.NoopAuthorizer{})
 
 	memories, err := service.List(memoryContext(t), "")
@@ -148,7 +159,11 @@ func (store *memoryStore) GetSessionForRuntime(_ context.Context, id, _ string) 
 	if store.bindingErr != nil {
 		return nil, store.bindingErr
 	}
-	return &apiv1.Session{Id: id, Creator: "user", Agent: &apiv1.ResourceReference{Namespace: "team-a", Name: "agent"}, A2AAuthority: substrate.ActorHost("team-a", substrate.ActorName(id), "")}, nil
+	session := &apiv1.Session{Id: id, Creator: "user", PreparedRevision: "revision", Agent: &apiv1.ResourceReference{Namespace: "team-a", Name: "agent"}, A2AAuthority: substrate.ActorHost("team-a", substrate.ActorName(id), "")}
+	if store.unpinned {
+		session.PreparedRevision = ""
+	}
+	return session, nil
 }
 
 type testActorVerifier struct{}
@@ -166,7 +181,7 @@ func memoryContext(t *testing.T) context.Context {
 }
 
 func TestActorMemoryUsesSessionScope(t *testing.T) {
-	store := &memoryStore{}
+	store := &memoryStore{memoryEnabled: true}
 	service := NewService(store, auth.NoopAuthorizer{})
 	ctx := memoryContext(t)
 	input := Input{Content: "scoped", Vector: vector(VectorDimension, 1)}
@@ -192,6 +207,38 @@ func TestActorMemoryUsesSessionScope(t *testing.T) {
 	require.Equal(t, "user", store.readUser)
 }
 
+func TestActorMemoryRequiresPinnedPolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		err      error
+		unpinned bool
+		code     serviceerrors.Code
+	}{
+		{name: "not enabled", code: serviceerrors.CodePermissionDenied},
+		{name: "unpinned session", unpinned: true, code: serviceerrors.CodePermissionDenied},
+		{name: "missing revision", err: database.ErrNotFound, code: serviceerrors.CodeInternal},
+		{name: "malformed revision", err: errors.New("invalid persisted Agent Card"), code: serviceerrors.CodeInternal},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			store := &memoryStore{revisionErr: tc.err, unpinned: tc.unpinned}
+			service := NewService(store, auth.NoopAuthorizer{})
+			ctx := memoryContext(t)
+			input := Input{Content: "private", Vector: vector(VectorDimension, 1)}
+			_, addErr := service.Add(ctx, input)
+			_, batchErr := service.AddBatch(ctx, []Input{input})
+			_, searchErr := service.Search(ctx, SearchRequest{Vector: input.Vector})
+			_, listErr := service.List(ctx, "team-a/agent")
+			deleteErr := service.Delete(ctx, "team-a/agent")
+			for _, err := range []error{addErr, batchErr, searchErr, listErr, deleteErr} {
+				require.True(t, serviceerrors.IsCode(err, tc.code), "%v", err)
+			}
+			require.Empty(t, store.stored)
+			require.Empty(t, store.readAgent)
+			require.Empty(t, store.deletedAgent)
+		})
+	}
+}
+
 func TestMemoryRejectsUnboundActors(t *testing.T) {
 	for _, test := range []struct {
 		name          string
@@ -202,7 +249,7 @@ func TestMemoryRejectsUnboundActors(t *testing.T) {
 		{name: "deleted or replaced actor", authenticated: true, bindingErr: database.ErrNotFound},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			store := &memoryStore{bindingErr: test.bindingErr}
+			store := &memoryStore{memoryEnabled: true, bindingErr: test.bindingErr}
 			service := NewService(store, auth.NoopAuthorizer{})
 			ctx := t.Context()
 			if test.authenticated {
@@ -226,7 +273,7 @@ func TestMemoryRejectsUnboundActors(t *testing.T) {
 }
 
 func TestUserMemoryManagementDoesNotRequireRuntime(t *testing.T) {
-	store := &memoryStore{bindingErr: database.ErrNotFound}
+	store := &memoryStore{memoryEnabled: true, bindingErr: database.ErrNotFound}
 	service := NewService(store, auth.NoopAuthorizer{})
 	ctx := auth.AuthSessionTo(t.Context(), &authimpl.SimpleSession{P: auth.Principal{ID: "owner"}})
 
@@ -252,7 +299,7 @@ func (deniedMemoryAuthorizer) Check(context.Context, auth.Principal, auth.Verb, 
 }
 
 func TestMemoryManagementHonorsConfiguredAuthorization(t *testing.T) {
-	store := &memoryStore{}
+	store := &memoryStore{memoryEnabled: true}
 	service := NewService(store, deniedMemoryAuthorizer{})
 	user := auth.AuthSessionTo(t.Context(), &authimpl.SimpleSession{P: auth.Principal{ID: "user"}})
 	for _, ctx := range []context.Context{user, memoryContext(t)} {
@@ -268,7 +315,7 @@ func TestMemoryManagementHonorsConfiguredAuthorization(t *testing.T) {
 func TestMemorySharesNeverReachPartitionStorage(t *testing.T) {
 	user := auth.AuthSessionTo(t.Context(), &authimpl.SimpleSession{P: auth.Principal{ID: "owner"}})
 	for _, ctx := range []context.Context{user, memoryContext(t)} {
-		store := &memoryStore{}
+		store := &memoryStore{memoryEnabled: true}
 		service := NewService(store, auth.NoopAuthorizer{})
 		shared := auth.ShareContextTo(ctx, &auth.ShareContext{SessionID: "shared-session", UserID: "owner"})
 		operations := []struct {

@@ -77,7 +77,7 @@ func TestReconcilePublishesSortedDiscovery(t *testing.T) {
 		{Name: "alpha", Description: "first"},
 	}}
 	catalog := &fakeCatalog{}
-	reconciler := New(kube, discoverer, catalog)
+	reconciler := New(kube, discoverer, catalog, BuiltinCatalog{})
 
 	result, err := reconciler.Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
 	if err != nil {
@@ -121,7 +121,7 @@ func TestReconcilePublishesFailureAndClearsStaleTools(t *testing.T) {
 	discoverer := &fakeDiscoverer{err: errors.New("upstream unavailable")}
 	catalog := &fakeCatalog{}
 
-	_, err := New(kube, discoverer, catalog).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
+	_, err := New(kube, discoverer, catalog, BuiltinCatalog{}).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
 	if err == nil {
 		t.Fatal("Reconcile() error = nil, want discovery failure")
 	}
@@ -146,7 +146,7 @@ func TestReconcileAcceptsWithoutDiscoveryWhenDisabled(t *testing.T) {
 	discoverer := &fakeDiscoverer{err: errors.New("the controller must not dial an opted-out server")}
 	catalog := &fakeCatalog{}
 
-	result, err := New(kube, discoverer, catalog).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
+	result, err := New(kube, discoverer, catalog, BuiltinCatalog{}).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
 	if err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
@@ -174,7 +174,7 @@ func TestReconcileDeletesCatalogProjection(t *testing.T) {
 	catalog := &fakeCatalog{}
 	request := ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "test", Name: "gone"}}
 
-	if _, err := New(testClient(t), &fakeDiscoverer{}, catalog).Reconcile(t.Context(), request); err != nil {
+	if _, err := New(testClient(t), &fakeDiscoverer{}, catalog, BuiltinCatalog{}).Reconcile(t.Context(), request); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 	want := "test/gone|" + remoteGroupKind
@@ -249,7 +249,7 @@ func TestActorJWTDisablesGlobalDiscovery(t *testing.T) {
 	kube := testClient(t, server)
 	discoverer := &fakeDiscoverer{err: errors.New("controller must not contact an Actor-authenticated server")}
 	catalog := &fakeCatalog{}
-	_, err := New(kube, discoverer, catalog).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
+	_, err := New(kube, discoverer, catalog, BuiltinCatalog{}).Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,5 +266,79 @@ func TestActorJWTDisablesGlobalDiscovery(t *testing.T) {
 	}
 	if len(catalog.tools) != 0 {
 		t.Fatal("stale tools must be cleared")
+	}
+}
+
+func TestBuiltinCatalogRequiresExactEndpointAndProtocol(t *testing.T) {
+	const endpoint = "http://kagent-controller.kagent.svc.cluster.local:8083/mcp"
+	for _, test := range []struct {
+		name     string
+		endpoint string
+		protocol v1alpha3.RemoteMCPServerProtocol
+		local    bool
+	}{
+		{"builtin", endpoint, v1alpha3.RemoteMCPServerProtocolStreamableHttp, true},
+		{"other origin", "http://other-controller.kagent.svc.cluster.local:8083/mcp", v1alpha3.RemoteMCPServerProtocolStreamableHttp, false},
+		{"other port", "http://kagent-controller.kagent.svc.cluster.local:8084/mcp", v1alpha3.RemoteMCPServerProtocolStreamableHttp, false},
+		{"other scheme", "https://kagent-controller.kagent.svc.cluster.local:8083/mcp", v1alpha3.RemoteMCPServerProtocolStreamableHttp, false},
+		{"other path", endpoint + "/other", v1alpha3.RemoteMCPServerProtocolStreamableHttp, false},
+		{"query", endpoint + "?tenant=other", v1alpha3.RemoteMCPServerProtocolStreamableHttp, false},
+		{"sse", endpoint, v1alpha3.RemoteMCPServerProtocolSse, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			server := testServer()
+			server.Spec.URL = test.endpoint
+			server.Spec.Protocol = test.protocol
+			server.Spec.HeadersFrom = []v1alpha3.ValueRef{{Name: "Authorization", Value: "Bearer kagent-credential-injected"}}
+			kube := testClient(t, server)
+			discoverer := &fakeDiscoverer{err: errors.New("401 Unauthorized")}
+			catalog := &fakeCatalog{}
+			reconciler := New(kube, discoverer, catalog, BuiltinCatalog{
+				Endpoint: endpoint, Tools: []toolservice.MCPAppTool{{Name: "list_sessions", Description: "registered tool"}},
+			})
+			_, err := reconciler.Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
+			updated := getServer(t, kube, server)
+			condition := apiMeta.FindStatusCondition(updated.Status.Conditions, conditionAccepted)
+			if !test.local {
+				if err == nil || discoverer.calls != 1 || condition == nil || condition.Status != metav1.ConditionFalse {
+					t.Fatalf("remote discovery: error = %v, calls = %d, condition = %#v", err, discoverer.calls, condition)
+				}
+				return
+			}
+			if err != nil || discoverer.calls != 0 {
+				t.Fatalf("builtin discovery: error = %v, remote calls = %d", err, discoverer.calls)
+			}
+			if condition == nil || condition.Status != metav1.ConditionTrue || condition.ObservedGeneration != server.Generation || updated.Status.ObservedGeneration != server.Generation {
+				t.Fatalf("builtin discovery status = %#v", updated.Status)
+			}
+			if len(catalog.tools) != 1 || catalog.tools[0].Name != "list_sessions" || catalog.tools[0].Description != "registered tool" || catalog.server.LastConnected == nil {
+				t.Fatalf("builtin catalog = %#v", catalog)
+			}
+		})
+	}
+}
+
+func TestBuiltinCatalogPreservesDiscoveryOptOut(t *testing.T) {
+	for _, actorJWT := range []bool{false, true} {
+		server := testServer()
+		if actorJWT {
+			server.Spec.ActorJWT = &v1alpha3.ActorJWT{Audiences: []string{"mcp"}}
+		} else {
+			server.Labels = map[string]string{consts.DiscoveryLabel: consts.DiscoveryDisabled}
+		}
+		kube := testClient(t, server)
+		discoverer := &fakeDiscoverer{err: errors.New("must not contact disabled server")}
+		catalog := &fakeCatalog{}
+		reconciler := New(kube, discoverer, catalog, BuiltinCatalog{
+			Endpoint: server.Spec.URL, Tools: []toolservice.MCPAppTool{{Name: "list_sessions"}},
+		})
+		_, err := reconciler.Reconcile(t.Context(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(server)})
+		if err != nil || discoverer.calls != 0 || len(catalog.tools) != 0 {
+			t.Fatalf("disabled builtin: error = %v, remote calls = %d, catalog = %#v", err, discoverer.calls, catalog)
+		}
+		condition := apiMeta.FindStatusCondition(getServer(t, kube, server).Status.Conditions, conditionAccepted)
+		if condition == nil || condition.Reason != "DiscoveryDisabled" {
+			t.Fatalf("disabled builtin condition = %#v", condition)
+		}
 	}
 }

@@ -27,6 +27,7 @@ const (
 	SessionService_CreateSessionShare_FullMethodName = "/kagent.api.v1.SessionService/CreateSessionShare"
 	SessionService_ListSessionShares_FullMethodName  = "/kagent.api.v1.SessionService/ListSessionShares"
 	SessionService_RevokeSessionShare_FullMethodName = "/kagent.api.v1.SessionService/RevokeSessionShare"
+	SessionService_ReadWorkspaceFile_FullMethodName  = "/kagent.api.v1.SessionService/ReadWorkspaceFile"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -47,6 +48,11 @@ type SessionServiceClient interface {
 	CreateSessionShare(ctx context.Context, in *CreateSessionShareRequest, opts ...grpc.CallOption) (*CreateSessionShareResponse, error)
 	ListSessionShares(ctx context.Context, in *ListSessionSharesRequest, opts ...grpc.CallOption) (*ListSessionSharesResponse, error)
 	RevokeSessionShare(ctx context.Context, in *RevokeSessionShareRequest, opts ...grpc.CallOption) (*RevokeSessionShareResponse, error)
+	// Downloads a regular file from the latest settled terminal workspace.
+	// Requires owner access; shares and runtime Actors cannot use this method.
+	// Reading coordinates with execution and runtime suspension. Success is only
+	// established by the final OK status; discard partial bytes on any failure.
+	ReadWorkspaceFile(ctx context.Context, in *ReadWorkspaceFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ReadWorkspaceFileResponse], error)
 }
 
 type sessionServiceClient struct {
@@ -137,6 +143,25 @@ func (c *sessionServiceClient) RevokeSessionShare(ctx context.Context, in *Revok
 	return out, nil
 }
 
+func (c *sessionServiceClient) ReadWorkspaceFile(ctx context.Context, in *ReadWorkspaceFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ReadWorkspaceFileResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[0], SessionService_ReadWorkspaceFile_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ReadWorkspaceFileRequest, ReadWorkspaceFileResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_ReadWorkspaceFileClient = grpc.ServerStreamingClient[ReadWorkspaceFileResponse]
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -155,6 +180,11 @@ type SessionServiceServer interface {
 	CreateSessionShare(context.Context, *CreateSessionShareRequest) (*CreateSessionShareResponse, error)
 	ListSessionShares(context.Context, *ListSessionSharesRequest) (*ListSessionSharesResponse, error)
 	RevokeSessionShare(context.Context, *RevokeSessionShareRequest) (*RevokeSessionShareResponse, error)
+	// Downloads a regular file from the latest settled terminal workspace.
+	// Requires owner access; shares and runtime Actors cannot use this method.
+	// Reading coordinates with execution and runtime suspension. Success is only
+	// established by the final OK status; discard partial bytes on any failure.
+	ReadWorkspaceFile(*ReadWorkspaceFileRequest, grpc.ServerStreamingServer[ReadWorkspaceFileResponse]) error
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -188,6 +218,9 @@ func (UnimplementedSessionServiceServer) ListSessionShares(context.Context, *Lis
 }
 func (UnimplementedSessionServiceServer) RevokeSessionShare(context.Context, *RevokeSessionShareRequest) (*RevokeSessionShareResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeSessionShare not implemented")
+}
+func (UnimplementedSessionServiceServer) ReadWorkspaceFile(*ReadWorkspaceFileRequest, grpc.ServerStreamingServer[ReadWorkspaceFileResponse]) error {
+	return status.Error(codes.Unimplemented, "method ReadWorkspaceFile not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -354,6 +387,17 @@ func _SessionService_RevokeSessionShare_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_ReadWorkspaceFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReadWorkspaceFileRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionServiceServer).ReadWorkspaceFile(m, &grpc.GenericServerStream[ReadWorkspaceFileRequest, ReadWorkspaceFileResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_ReadWorkspaceFileServer = grpc.ServerStreamingServer[ReadWorkspaceFileResponse]
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -394,6 +438,12 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SessionService_RevokeSessionShare_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ReadWorkspaceFile",
+			Handler:       _SessionService_ReadWorkspaceFile_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "kagent/api/v1/sessions.proto",
 }

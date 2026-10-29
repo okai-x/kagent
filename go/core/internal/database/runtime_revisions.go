@@ -133,9 +133,9 @@ func (c *Client) RecordRuntimeRevision(ctx context.Context, revision RuntimeRevi
 			return err
 		}
 		if err := execSQL(ctx, tx, `
-			INSERT INTO agent_revision (revision, agent_name, agent_uid, agent_card)
-			VALUES ($1, $2, $3, $4) ON CONFLICT (revision) DO NOTHING
-		`, revision.Revision, revision.AgentName, revision.AgentUID, card); err != nil {
+			INSERT INTO agent_revision (revision, agent_name, agent_uid, agent_card, memory_enabled)
+			VALUES ($1, $2, $3, $4, $5) ON CONFLICT (revision) DO NOTHING
+		`, revision.Revision, revision.AgentName, revision.AgentUID, card, revision.MemoryEnabled); err != nil {
 			return err
 		}
 		if !options.Ready {
@@ -161,7 +161,7 @@ func (c *Client) GetRuntimeRevision(ctx context.Context, revision string) (*Runt
 	row, err := queryOne(ctx, c.db, `
 		SELECT revision, namespace, agent_name, agent_uid,
 		    source_snapshot, egress_destinations, token_passthrough_targets, credentials, actor_template_atespace, actor_template_name, actor_template_uid,
-		    agent_card, deleted_at FROM agent_runtime_revision WHERE revision = $1
+		    agent_card, memory_enabled, deleted_at FROM agent_runtime_revision WHERE revision = $1
 	`, pgx.RowToStructByName[runtimeRevisionRow], revision)
 	if err != nil {
 		return nil, fmt.Errorf("get runtime revision %s: %w", revision, notFoundOr(err))
@@ -188,6 +188,7 @@ func toRuntimeRevision(row runtimeRevisionRow) (*RuntimeRevision, error) {
 		Revision: row.Revision, Namespace: row.Namespace,
 		AgentName: row.AgentName, AgentUID: row.AgentUID,
 		SourceSnapshot: row.SourceSnapshot, AgentCard: card,
+		MemoryEnabled:           row.MemoryEnabled,
 		EgressDestinations:      row.EgressDestinations,
 		TokenPassthroughTargets: targets,
 		Credentials:             credentials,
@@ -239,7 +240,7 @@ func getAvailableRuntimeRevisionForUpdate(ctx context.Context, tx pgx.Tx, revisi
 	return queryOne(ctx, tx, `
   SELECT revision, namespace, agent_name, agent_uid,
    source_snapshot, egress_destinations, token_passthrough_targets, credentials, actor_template_atespace, actor_template_name, actor_template_uid,
-   agent_card, deleted_at FROM agent_runtime_revision WHERE revision = $1
+   agent_card, memory_enabled, deleted_at FROM agent_runtime_revision WHERE revision = $1
  `, pgx.RowToStructByName[runtimeRevisionRow], revision)
 }
 
@@ -386,5 +387,6 @@ type runtimeRevisionRow struct {
 	ActorTemplateName       string
 	ActorTemplateUID        string
 	AgentCard               []byte
+	MemoryEnabled           bool
 	DeletedAt               *time.Time
 }

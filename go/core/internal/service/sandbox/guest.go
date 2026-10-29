@@ -62,7 +62,8 @@ func (d *GuestDialer) context(ctx context.Context, instance *apiv1.Sandbox, revi
 	if !ok {
 		return nil, serviceerrors.NewUnauthenticated("Guest access requires authentication", nil)
 	}
-	if err := d.authenticator.UpstreamAuth(request, session, ""); err != nil {
+	// Only the service-authorized binding may authorize an Actor's guest call.
+	if err := d.authenticator.UpstreamAuth(request, session, instance.SessionId); err != nil {
 		return nil, err
 	}
 	md := metadata.MD{}

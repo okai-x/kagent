@@ -7,7 +7,7 @@ from typing import Any, Protocol
 from urllib.parse import urlsplit
 
 import grpc
-from kagent.runtime.v1 import memory_pb2_grpc, task_store_pb2_grpc
+from kagent.runtime.v1 import memory_pb2_grpc, task_store_pb2_grpc, workspace_pb2_grpc
 
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DEFAULT_MAX_MESSAGE_BYTES = 16 << 20
@@ -60,6 +60,7 @@ class AsyncControllerClient:
         self._closed = False
         self._memory_service: memory_pb2_grpc.MemoryServiceStub | None = None
         self._task_store_service: task_store_pb2_grpc.TaskStoreServiceStub | None = None
+        self._workspace_access_service: workspace_pb2_grpc.WorkspaceAccessServiceStub | None = None
 
     @property
     def channel(self) -> grpc.aio.Channel:
@@ -89,6 +90,12 @@ class AsyncControllerClient:
         if self._task_store_service is None:
             self._task_store_service = task_store_pb2_grpc.TaskStoreServiceStub(self.channel)
         return self._task_store_service
+
+    @property
+    def workspace_access_service(self) -> workspace_pb2_grpc.WorkspaceAccessServiceStub:
+        if self._workspace_access_service is None:
+            self._workspace_access_service = workspace_pb2_grpc.WorkspaceAccessServiceStub(self.channel)
+        return self._workspace_access_service
 
     async def call_options(self, user_id: str | None = None) -> dict[str, Any]:
         # Substrate replaces this placeholder at the controller's runtime origin.

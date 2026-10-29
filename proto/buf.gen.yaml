@@ -24,6 +24,14 @@ plugins:
     types:
       - kagent.runtime.v1.MemoryService
       - kagent.runtime.v1.TaskStoreService
+      - kagent.runtime.v1.WorkspaceService
+      - kagent.runtime.v1.WorkspaceAccessService
+      - kagent.api.v1.SessionService
+      - kagent.api.v1.CheckpointService
+      - kagent.api.v1.SandboxService
+      - kagent.api.v1.AgentService
+      - kagent.api.v1.HarnessService
+      - kagent.api.v1.SandboxTemplateService
       - kagent.api.v1.StructuredObject
       - kagent.config.v1.ADKConfig
   - remote: buf.build/protocolbuffers/pyi:v33.5
@@ -31,6 +39,14 @@ plugins:
     types:
       - kagent.runtime.v1.MemoryService
       - kagent.runtime.v1.TaskStoreService
+      - kagent.runtime.v1.WorkspaceService
+      - kagent.runtime.v1.WorkspaceAccessService
+      - kagent.api.v1.SessionService
+      - kagent.api.v1.CheckpointService
+      - kagent.api.v1.SandboxService
+      - kagent.api.v1.AgentService
+      - kagent.api.v1.HarnessService
+      - kagent.api.v1.SandboxTemplateService
       - kagent.api.v1.StructuredObject
       - kagent.config.v1.ADKConfig
   - remote: buf.build/grpc/python:v1.83.0
@@ -38,4 +54,12 @@ plugins:
     types:
       - kagent.runtime.v1.MemoryService
       - kagent.runtime.v1.TaskStoreService
+      - kagent.runtime.v1.WorkspaceService
+      - kagent.runtime.v1.WorkspaceAccessService
+      - kagent.api.v1.SessionService
+      - kagent.api.v1.CheckpointService
+      - kagent.api.v1.SandboxService
+      - kagent.api.v1.AgentService
+      - kagent.api.v1.HarnessService
+      - kagent.api.v1.SandboxTemplateService
       - kagent.api.v1.StructuredObject

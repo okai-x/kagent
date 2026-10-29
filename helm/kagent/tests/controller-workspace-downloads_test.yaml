@@ -1,0 +1,65 @@
+suite: test controller workspace download storage
+templates:
+  - controller-deployment.yaml
+  - controller-configmap.yaml
+tests:
+  - it: should mount bounded disk storage while retaining non-root and read-only root
+    template: controller-deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: workspace-downloads
+            emptyDir:
+              sizeLimit: 512Mi
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: workspace-downloads
+            mountPath: /tmp
+            readOnly: false
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          value: [ALL]
+
+  - it: should retain workspace storage when additional volumes are configured
+    template: controller-deployment.yaml
+    set:
+      controller.volumes:
+        - name: extra-data
+          emptyDir: {}
+      controller.volumeMounts:
+        - name: extra-data
+          mountPath: /extra
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: workspace-downloads
+            emptyDir:
+              sizeLimit: 512Mi
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: workspace-downloads
+            mountPath: /tmp
+            readOnly: false
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: extra-data
+            emptyDir: {}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra-data
+            mountPath: /extra

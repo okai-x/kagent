@@ -18,16 +18,35 @@ import (
 
 // run executes one attempt inline. Errors retain durable intent; only another
 // lifecycle request retries it. Expiration independently requests deletion.
-func (s *Service) run(ctx context.Context, id string, kind apiv1.RuntimeOperation) (_ *apiv1.Sandbox, err error) {
+func (s *Service) run(ctx context.Context, id string, kind apiv1.RuntimeOperation) (*apiv1.Sandbox, error) {
 	ctx, cancel := context.WithTimeout(ctx, database.RuntimeOperationTimeout)
 	defer cancel()
 	op, err := s.config.Store.BeginSandboxOperation(ctx, id, kind)
 	if err != nil {
 		return nil, sandboxError(err)
 	}
+	return s.execute(ctx, op, kind)
+}
+
+func (s *Service) expire(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, database.RuntimeOperationTimeout)
+	defer cancel()
+	op, err := s.config.Store.BeginSandboxExpiration(ctx, id)
+	if err != nil {
+		return sandboxError(err)
+	}
+	if op == nil {
+		return nil
+	}
+	_, err = s.execute(ctx, op, apiv1.RuntimeOperation_RUNTIME_OPERATION_DELETE)
+	return err
+}
+
+func (s *Service) execute(ctx context.Context, op *database.SandboxOperation, kind apiv1.RuntimeOperation) (_ *apiv1.Sandbox, err error) {
 	if op.Instance.Operation != kind {
 		return op.Instance, nil
 	}
+	id := op.Instance.Id
 	defer func() {
 		if err != nil {
 			finishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
@@ -103,7 +122,7 @@ func (s *Service) Start(ctx context.Context) error {
 			group.SetLimit(4)
 			for _, id := range ids {
 				group.Go(func() error {
-					if _, err := s.run(ctx, id, apiv1.RuntimeOperation_RUNTIME_OPERATION_DELETE); err != nil && !errors.Is(err, database.ErrConflict) && ctx.Err() == nil {
+					if err := s.expire(ctx, id); err != nil && !errors.Is(err, database.ErrConflict) && ctx.Err() == nil {
 						logging.FromContext(ctx).ErrorContext(ctx, "expire sandbox", "sandbox_id", id, "error", err)
 					}
 					return nil

@@ -48,6 +48,12 @@ func (a *Authorizer) Check(ctx context.Context, principal auth.Principal, verb a
 			(verb == auth.VerbGet || verb == auth.VerbList || verb == auth.VerbCreate || verb == auth.VerbDelete) {
 			return nil
 		}
+	case "Sandbox":
+		// The Sandbox service applies the immutable Session binding before any
+		// row or guest access, including filtering collections before pagination.
+		if verb == auth.VerbGet || verb == auth.VerbList || verb == auth.VerbUpdate {
+			return nil
+		}
 	}
 	return fmt.Errorf("actor is not authorized for %s on %s", verb, resource.Type)
 }

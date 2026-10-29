@@ -25,6 +25,11 @@ tests:
       - equal:
           path: spec.url
           value: http://kagent-controller.kagent.svc.cluster.local:8083/mcp
+      - equal:
+          path: spec.headersFrom
+          value:
+            - name: Authorization
+              value: Bearer kagent-credential-injected
 
   - it: follows the controller fullname, namespace, and service port overrides
     set:

@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kagent/api/v1/sandboxes.proto.
  */
 export const file_kagent_api_v1_sandboxes: GenFile = /*@__PURE__*/
-  fileDesc("Ch1rYWdlbnQvYXBpL3YxL3NhbmRib3hlcy5wcm90bxINa2FnZW50LmFwaS52MSKkAwoHU2FuZGJveBIKCgJpZBgBIAEoCRIPCgdjcmVhdG9yGAIgASgJEjoKEHNhbmRib3hfdGVtcGxhdGUYAyABKAsyIC5rYWdlbnQuYXBpLnYxLlJlc291cmNlUmVmZXJlbmNlEhkKEXByZXBhcmVkX3JldmlzaW9uGAQgASgJEioKBXN0YXRlGAUgASgOMhsua2FnZW50LmFwaS52MS5SdW50aW1lU3RhdGUSMgoJb3BlcmF0aW9uGAYgASgOMh8ua2FnZW50LmFwaS52MS5SdW50aW1lT3BlcmF0aW9uEicKB2ZhaWx1cmUYByABKAsyFi5rYWdlbnQuYXBpLnYxLkZhaWx1cmUSDAoEbmFtZRgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpleHBpcmVzX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLMAQoUQ3JlYXRlU2FuZGJveFJlcXVlc3QSQgoQc2FuZGJveF90ZW1wbGF0ZRgBIAEoCzIgLmthZ2VudC5hcGkudjEuUmVzb3VyY2VSZWZlcmVuY2VCBrpIA8gBARIeCgpyZXF1ZXN0X2lkGAIgASgJQgq6SAdyBRABGIABEhYKBG5hbWUYAyABKAlCCLpIBXIDGMgBEjgKA3R0bBgEIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbkIQukgNqgEKIgQIgKMFMgIIASJAChVDcmVhdGVTYW5kYm94UmVzcG9uc2USJwoHc2FuZGJveBgBIAEoCzIWLmthZ2VudC5hcGkudjEuU2FuZGJveCIxChFHZXRTYW5kYm94UmVxdWVzdBIcCgpzYW5kYm94X2lkGAEgASgJQgi6SAVyA7ABASI9ChJHZXRTYW5kYm94UmVzcG9uc2USJwoHc2FuZGJveBgBIAEoCzIWLmthZ2VudC5hcGkudjEuU2FuZGJveCJ8ChRMaXN0U2FuZGJveGVzUmVxdWVzdBIoCgRwYWdlGAEgASgLMhoua2FnZW50LmFwaS52MS5QYWdlUmVxdWVzdBI6ChBzYW5kYm94X3RlbXBsYXRlGAIgASgLMiAua2FnZW50LmFwaS52MS5SZXNvdXJjZVJlZmVyZW5jZSJtChVMaXN0U2FuZGJveGVzUmVzcG9uc2USKQoJc2FuZGJveGVzGAEgAygLMhYua2FnZW50LmFwaS52MS5TYW5kYm94EikKBHBhZ2UYAiABKAsyGy5rYWdlbnQuYXBpLnYxLlBhZ2VSZXNwb25zZSI1ChVTdXNwZW5kU2FuZGJveFJlcXVlc3QSHAoKc2FuZGJveF9pZBgBIAEoCUIIukgFcgOwAQEiQQoWU3VzcGVuZFNhbmRib3hSZXNwb25zZRInCgdzYW5kYm94GAEgASgLMhYua2FnZW50LmFwaS52MS5TYW5kYm94IjQKFFJlc3VtZVNhbmRib3hSZXF1ZXN0EhwKCnNhbmRib3hfaWQYASABKAlCCLpIBXIDsAEBIkAKFVJlc3VtZVNhbmRib3hSZXNwb25zZRInCgdzYW5kYm94GAEgASgLMhYua2FnZW50LmFwaS52MS5TYW5kYm94IjQKFERlbGV0ZVNhbmRib3hSZXF1ZXN0EhwKCnNhbmRib3hfaWQYASABKAlCCLpIBXIDsAEBIkAKFURlbGV0ZVNhbmRib3hSZXNwb25zZRInCgdzYW5kYm94GAEgASgLMhYua2FnZW50LmFwaS52MS5TYW5kYm94MrIECg5TYW5kYm94U2VydmljZRJaCg1DcmVhdGVTYW5kYm94EiMua2FnZW50LmFwaS52MS5DcmVhdGVTYW5kYm94UmVxdWVzdBokLmthZ2VudC5hcGkudjEuQ3JlYXRlU2FuZGJveFJlc3BvbnNlElEKCkdldFNhbmRib3gSIC5rYWdlbnQuYXBpLnYxLkdldFNhbmRib3hSZXF1ZXN0GiEua2FnZW50LmFwaS52MS5HZXRTYW5kYm94UmVzcG9uc2USWgoNTGlzdFNhbmRib3hlcxIjLmthZ2VudC5hcGkudjEuTGlzdFNhbmRib3hlc1JlcXVlc3QaJC5rYWdlbnQuYXBpLnYxLkxpc3RTYW5kYm94ZXNSZXNwb25zZRJdCg5TdXNwZW5kU2FuZGJveBIkLmthZ2VudC5hcGkudjEuU3VzcGVuZFNhbmRib3hSZXF1ZXN0GiUua2FnZW50LmFwaS52MS5TdXNwZW5kU2FuZGJveFJlc3BvbnNlEloKDVJlc3VtZVNhbmRib3gSIy5rYWdlbnQuYXBpLnYxLlJlc3VtZVNhbmRib3hSZXF1ZXN0GiQua2FnZW50LmFwaS52MS5SZXN1bWVTYW5kYm94UmVzcG9uc2USWgoNRGVsZXRlU2FuZGJveBIjLmthZ2VudC5hcGkudjEuRGVsZXRlU2FuZGJveFJlcXVlc3QaJC5rYWdlbnQuYXBpLnYxLkRlbGV0ZVNhbmRib3hSZXNwb25zZUI9WjtnaXRodWIuY29tL2thZ2VudC1kZXYva2FnZW50L2dvL2FwaS9nZW4va2FnZW50L2FwaS92MTthcGl2MWIGcHJvdG8z", [file_buf_validate_validate, file_google_protobuf_duration, file_google_protobuf_timestamp, file_kagent_api_v1_common, file_kagent_api_v1_runtime, file_kagent_api_v1_sessions]);
+  fileDesc("Ch1rYWdlbnQvYXBpL3YxL3NhbmRib3hlcy5wcm90bxINa2FnZW50LmFwaS52MSK4AwoHU2FuZGJveBIKCgJpZBgBIAEoCRIPCgdjcmVhdG9yGAIgASgJEjoKEHNhbmRib3hfdGVtcGxhdGUYAyABKAsyIC5rYWdlbnQuYXBpLnYxLlJlc291cmNlUmVmZXJlbmNlEhkKEXByZXBhcmVkX3JldmlzaW9uGAQgASgJEioKBXN0YXRlGAUgASgOMhsua2FnZW50LmFwaS52MS5SdW50aW1lU3RhdGUSMgoJb3BlcmF0aW9uGAYgASgOMh8ua2FnZW50LmFwaS52MS5SdW50aW1lT3BlcmF0aW9uEicKB2ZhaWx1cmUYByABKAsyFi5rYWdlbnQuYXBpLnYxLkZhaWx1cmUSDAoEbmFtZRgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpleHBpcmVzX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpzZXNzaW9uX2lkGAwgASgJIu0BChRDcmVhdGVTYW5kYm94UmVxdWVzdBJCChBzYW5kYm94X3RlbXBsYXRlGAEgASgLMiAua2FnZW50LmFwaS52MS5SZXNvdXJjZVJlZmVyZW5jZUIGukgDyAEBEh4KCnJlcXVlc3RfaWQYAiABKAlCCrpIB3IFEAEYgAESFgoEbmFtZRgDIAEoCUIIukgFcgMYyAESOAoDdHRsGAQgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQhC6SA2qAQoiBAiAowUyAggBEh8KCnNlc3Npb25faWQYBSABKAlCC7pICNgBAXIDsAEBIkAKFUNyZWF0ZVNhbmRib3hSZXNwb25zZRInCgdzYW5kYm94GAEgASgLMhYua2FnZW50LmFwaS52MS5TYW5kYm94IjEKEUdldFNhbmRib3hSZXF1ZXN0EhwKCnNhbmRib3hfaWQYASABKAlCCLpIBXIDsAEBIj0KEkdldFNhbmRib3hSZXNwb25zZRInCgdzYW5kYm94GAEgASgLMhYua2FnZW50LmFwaS52MS5TYW5kYm94InwKFExpc3RTYW5kYm94ZXNSZXF1ZXN0EigKBHBhZ2UYASABKAsyGi5rYWdlbnQuYXBpLnYxLlBhZ2VSZXF1ZXN0EjoKEHNhbmRib3hfdGVtcGxhdGUYAiABKAsyIC5rYWdlbnQuYXBpLnYxLlJlc291cmNlUmVmZXJlbmNlIm0KFUxpc3RTYW5kYm94ZXNSZXNwb25zZRIpCglzYW5kYm94ZXMYASADKAsyFi5rYWdlbnQuYXBpLnYxLlNhbmRib3gSKQoEcGFnZRgCIAEoCzIbLmthZ2VudC5hcGkudjEuUGFnZVJlc3BvbnNlIjUKFVN1c3BlbmRTYW5kYm94UmVxdWVzdBIcCgpzYW5kYm94X2lkGAEgASgJQgi6SAVyA7ABASJBChZTdXNwZW5kU2FuZGJveFJlc3BvbnNlEicKB3NhbmRib3gYASABKAsyFi5rYWdlbnQuYXBpLnYxLlNhbmRib3giNAoUUmVzdW1lU2FuZGJveFJlcXVlc3QSHAoKc2FuZGJveF9pZBgBIAEoCUIIukgFcgOwAQEiQAoVUmVzdW1lU2FuZGJveFJlc3BvbnNlEicKB3NhbmRib3gYASABKAsyFi5rYWdlbnQuYXBpLnYxLlNhbmRib3giawoTUmVuZXdTYW5kYm94UmVxdWVzdBIcCgpzYW5kYm94X2lkGAEgASgJQgi6SAVyA7ABARI2CgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIGukgDyAEBIj8KFFJlbmV3U2FuZGJveFJlc3BvbnNlEicKB3NhbmRib3gYASABKAsyFi5rYWdlbnQuYXBpLnYxLlNhbmRib3giNAoURGVsZXRlU2FuZGJveFJlcXVlc3QSHAoKc2FuZGJveF9pZBgBIAEoCUIIukgFcgOwAQEiQAoVRGVsZXRlU2FuZGJveFJlc3BvbnNlEicKB3NhbmRib3gYASABKAsyFi5rYWdlbnQuYXBpLnYxLlNhbmRib3gyiwUKDlNhbmRib3hTZXJ2aWNlEloKDUNyZWF0ZVNhbmRib3gSIy5rYWdlbnQuYXBpLnYxLkNyZWF0ZVNhbmRib3hSZXF1ZXN0GiQua2FnZW50LmFwaS52MS5DcmVhdGVTYW5kYm94UmVzcG9uc2USUQoKR2V0U2FuZGJveBIgLmthZ2VudC5hcGkudjEuR2V0U2FuZGJveFJlcXVlc3QaIS5rYWdlbnQuYXBpLnYxLkdldFNhbmRib3hSZXNwb25zZRJaCg1MaXN0U2FuZGJveGVzEiMua2FnZW50LmFwaS52MS5MaXN0U2FuZGJveGVzUmVxdWVzdBokLmthZ2VudC5hcGkudjEuTGlzdFNhbmRib3hlc1Jlc3BvbnNlEl0KDlN1c3BlbmRTYW5kYm94EiQua2FnZW50LmFwaS52MS5TdXNwZW5kU2FuZGJveFJlcXVlc3QaJS5rYWdlbnQuYXBpLnYxLlN1c3BlbmRTYW5kYm94UmVzcG9uc2USWgoNUmVzdW1lU2FuZGJveBIjLmthZ2VudC5hcGkudjEuUmVzdW1lU2FuZGJveFJlcXVlc3QaJC5rYWdlbnQuYXBpLnYxLlJlc3VtZVNhbmRib3hSZXNwb25zZRJXCgxSZW5ld1NhbmRib3gSIi5rYWdlbnQuYXBpLnYxLlJlbmV3U2FuZGJveFJlcXVlc3QaIy5rYWdlbnQuYXBpLnYxLlJlbmV3U2FuZGJveFJlc3BvbnNlEloKDURlbGV0ZVNhbmRib3gSIy5rYWdlbnQuYXBpLnYxLkRlbGV0ZVNhbmRib3hSZXF1ZXN0GiQua2FnZW50LmFwaS52MS5EZWxldGVTYW5kYm94UmVzcG9uc2VCPVo7Z2l0aHViLmNvbS9rYWdlbnQtZGV2L2thZ2VudC9nby9hcGkvZ2VuL2thZ2VudC9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_buf_validate_validate, file_google_protobuf_duration, file_google_protobuf_timestamp, file_kagent_api_v1_common, file_kagent_api_v1_runtime, file_kagent_api_v1_sessions]);
 
 /**
  * @generated from message kagent.api.v1.Sandbox
@@ -79,6 +79,13 @@ export type Sandbox = Message<"kagent.api.v1.Sandbox"> & {
    * @generated from field: google.protobuf.Timestamp expires_at = 11;
    */
   expiresAt?: Timestamp | undefined;
+
+  /**
+   * Immutable conversation binding. Empty for standalone product-owned sandboxes.
+   *
+   * @generated from field: string session_id = 12;
+   */
+  sessionId: string;
 };
 
 /**
@@ -113,6 +120,13 @@ export type CreateSandboxRequest = Message<"kagent.api.v1.CreateSandboxRequest">
    * @generated from field: google.protobuf.Duration ttl = 4;
    */
   ttl?: Duration | undefined;
+
+  /**
+   * Only the owning product may bind a sandbox to one of its Sessions.
+   *
+   * @generated from field: string session_id = 5;
+   */
+  sessionId: string;
 };
 
 /**
@@ -286,6 +300,47 @@ export const ResumeSandboxResponseSchema: GenMessage<ResumeSandboxResponse> = /*
   messageDesc(file_kagent_api_v1_sandboxes, 10);
 
 /**
+ * @generated from message kagent.api.v1.RenewSandboxRequest
+ */
+export type RenewSandboxRequest = Message<"kagent.api.v1.RenewSandboxRequest"> & {
+  /**
+   * @generated from field: string sandbox_id = 1;
+   */
+  sandboxId: string;
+
+  /**
+   * Absolute deadline; retries never extend beyond this value.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_at = 2;
+   */
+  expiresAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message kagent.api.v1.RenewSandboxRequest.
+ * Use `create(RenewSandboxRequestSchema)` to create a new message.
+ */
+export const RenewSandboxRequestSchema: GenMessage<RenewSandboxRequest> = /*@__PURE__*/
+  messageDesc(file_kagent_api_v1_sandboxes, 11);
+
+/**
+ * @generated from message kagent.api.v1.RenewSandboxResponse
+ */
+export type RenewSandboxResponse = Message<"kagent.api.v1.RenewSandboxResponse"> & {
+  /**
+   * @generated from field: kagent.api.v1.Sandbox sandbox = 1;
+   */
+  sandbox?: Sandbox | undefined;
+};
+
+/**
+ * Describes the message kagent.api.v1.RenewSandboxResponse.
+ * Use `create(RenewSandboxResponseSchema)` to create a new message.
+ */
+export const RenewSandboxResponseSchema: GenMessage<RenewSandboxResponse> = /*@__PURE__*/
+  messageDesc(file_kagent_api_v1_sandboxes, 12);
+
+/**
  * @generated from message kagent.api.v1.DeleteSandboxRequest
  */
 export type DeleteSandboxRequest = Message<"kagent.api.v1.DeleteSandboxRequest"> & {
@@ -300,7 +355,7 @@ export type DeleteSandboxRequest = Message<"kagent.api.v1.DeleteSandboxRequest">
  * Use `create(DeleteSandboxRequestSchema)` to create a new message.
  */
 export const DeleteSandboxRequestSchema: GenMessage<DeleteSandboxRequest> = /*@__PURE__*/
-  messageDesc(file_kagent_api_v1_sandboxes, 11);
+  messageDesc(file_kagent_api_v1_sandboxes, 13);
 
 /**
  * @generated from message kagent.api.v1.DeleteSandboxResponse
@@ -317,7 +372,7 @@ export type DeleteSandboxResponse = Message<"kagent.api.v1.DeleteSandboxResponse
  * Use `create(DeleteSandboxResponseSchema)` to create a new message.
  */
 export const DeleteSandboxResponseSchema: GenMessage<DeleteSandboxResponse> = /*@__PURE__*/
-  messageDesc(file_kagent_api_v1_sandboxes, 12);
+  messageDesc(file_kagent_api_v1_sandboxes, 14);
 
 /**
  * SandboxService owns standalone scratch environments. Guest calls cannot target
@@ -373,6 +428,14 @@ export const SandboxService: GenService<{
     methodKind: "unary";
     input: typeof ResumeSandboxRequestSchema;
     output: typeof ResumeSandboxResponseSchema;
+  },
+  /**
+   * @generated from rpc kagent.api.v1.SandboxService.RenewSandbox
+   */
+  renewSandbox: {
+    methodKind: "unary";
+    input: typeof RenewSandboxRequestSchema;
+    output: typeof RenewSandboxResponseSchema;
   },
   /**
    * @generated from rpc kagent.api.v1.SandboxService.DeleteSandbox

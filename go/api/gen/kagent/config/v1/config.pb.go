@@ -2193,11 +2193,12 @@ const file_kagent_config_v1_config_proto_rawDesc = "" +
 	"\fbind_address\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\vbindAddress\x88\x01\x01\x12'\n" +
 	"\x0fgrpc_reflection\x18\x02 \x01(\bR\x0egrpcReflection\x12:\n" +
 	"\x04auth\x18\x03 \x01(\v2&.kagent.config.v1.AuthenticationConfigR\x04authB\x0f\n" +
-	"\r_bind_address\"\xd5\x01\n" +
-	"\x14AuthenticationConfig\x127\n" +
-	"\x04mode\x18\x01 \x01(\tB\x1e\xbaH\x1br\x19R\binsecureR\rtrusted-proxyH\x00R\x04mode\x88\x01\x01\x12\"\n" +
+	"\r_bind_address\"\x8f\x03\n" +
+	"\x14AuthenticationConfig\x12H\n" +
+	"\x04mode\x18\x01 \x01(\tB/\xbaH,r*R\binsecureR\rtrusted-proxyR\x0fservice-accountH\x00R\x04mode\x88\x01\x01\x12\"\n" +
 	"\ruser_id_claim\x18\x02 \x01(\tR\vuserIdClaim\x12W\n" +
-	"\x0fservice_account\x18\x03 \x01(\v2..kagent.config.v1.ServiceAccountAuthenticationR\x0eserviceAccountB\a\n" +
+	"\x0fservice_account\x18\x03 \x01(\v2..kagent.config.v1.ServiceAccountAuthenticationR\x0eserviceAccount:\xa6\x01\xbaH\xa2\x01\x1a\x9f\x01\n" +
+	"'authentication.service_account_required\x127service-account mode requires service_account.authority\x1a;this.mode != 'service-account' || has(this.service_account)B\a\n" +
 	"\x05_mode\"E\n" +
 	"\x1cServiceAccountAuthentication\x12%\n" +
 	"\tauthority\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tauthority\"\xc7\x03\n" +

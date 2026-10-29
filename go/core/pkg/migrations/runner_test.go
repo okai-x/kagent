@@ -319,6 +319,9 @@ func TestBuiltinMigrationsRoundTrip(t *testing.T) {
 	}
 	for _, source := range sources {
 		expected := []int64{0, 1}
+		if source.TrackingTable == "schema_migrations" {
+			expected = []int64{0, 1, 2, 3, 4, 5}
+		}
 		if versions := testVersions(t, dsn, source.TrackingTable); !slices.Equal(versions, expected) {
 			t.Fatalf("%s versions = %v, want %v", source.Name, versions, expected)
 		}
@@ -333,6 +336,9 @@ func TestBuiltinMigrationsRoundTrip(t *testing.T) {
 	}
 	if !testColumnExists(t, dsn, "session", "deletion_reason") {
 		t.Fatal("session deletion reason is missing")
+	}
+	if !testTableExists(t, dsn, "session_workspace_access") {
+		t.Fatal("session workspace access migration is missing")
 	}
 	if !testTableExists(t, dsn, "agent_definition") || testTableExists(t, dsn, "agent_template_harness_pair") {
 		t.Fatal("initial migration must create explicit Agent definitions without legacy pairs")

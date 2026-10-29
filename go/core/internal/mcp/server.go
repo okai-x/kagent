@@ -33,6 +33,7 @@ type Handler struct {
 	sessions    *sessionsvc.Service
 	checkpoints *checkpoint.Service
 	gateway     a2asrv.RequestHandler
+	server      *mcp.Server
 	http        http.Handler
 }
 
@@ -98,6 +99,7 @@ func New(sessions *sessionsvc.Service, checkpoints *checkpoint.Service, gateway 
 	if err := h.registerTaskMethods(server); err != nil {
 		return nil, err
 	}
+	h.server = server
 	h.http = mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{Stateless: true})
 	return h, nil
 }

@@ -16,6 +16,9 @@ func TestControllerConfig(t *testing.T) {
 		invalid     bool
 	}{
 		{"defaults", "{}", false},
+		{"machine only", "server: {auth: {mode: service-account, serviceAccount: {authority: cluster-a}}}", false},
+		{"machine only missing verifier", "server: {auth: {mode: service-account}}", true},
+		{"machine only missing authority", "server: {auth: {mode: service-account, serviceAccount: {}}}", true},
 		{"actor JWT issuer", "substrate: {actorJwtIssuer: https://actors.example}", false},
 		{"empty actor JWT issuer", "substrate: {actorJwtIssuer: ''}", true},
 		{"HTTP actor JWT issuer", "substrate: {actorJwtIssuer: http://actors.example}", true},

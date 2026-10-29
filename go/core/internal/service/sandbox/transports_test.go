@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	apiv1 "github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1"
 	sandboxapi "github.com/kagent-dev/kagent/go/api/sandbox"
@@ -65,6 +66,10 @@ func TestSandboxTransports(t *testing.T) {
 	created, err := client.CreateSandbox(ctx, createRequest())
 	require.NoError(t, err)
 	id := created.Sandbox.Id
+	deadline := timestamppb.New(time.Now().Add(2 * time.Hour).UTC().Truncate(time.Microsecond))
+	renewed, err := client.RenewSandbox(ctx, &apiv1.RenewSandboxRequest{SandboxId: id, ExpiresAt: deadline})
+	require.NoError(t, err)
+	require.Equal(t, deadline.AsTime(), renewed.Sandbox.ExpiresAt.AsTime())
 	ctx = metadata.AppendToOutgoingContext(ctx, sandboxapi.IDHeader, id)
 	require.Equal(t, []string{"create", "policy", "resume"}, actors.observedCalls())
 	writer, err := files.WriteFile(ctx)

@@ -37,8 +37,10 @@ type Sandbox struct {
 	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ExpiresAt        *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Immutable conversation binding. Empty for standalone product-owned sandboxes.
+	SessionId     string `protobuf:"bytes,12,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Sandbox) Reset() {
@@ -148,13 +150,22 @@ func (x *Sandbox) GetExpiresAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Sandbox) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
 type CreateSandboxRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	SandboxTemplate *ResourceReference     `protobuf:"bytes,1,opt,name=sandbox_template,json=sandboxTemplate,proto3" json:"sandbox_template,omitempty"`
 	RequestId       string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	// Omission uses the operator's default. Lifetime is not extended by activity.
-	Ttl           *durationpb.Duration `protobuf:"bytes,4,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl *durationpb.Duration `protobuf:"bytes,4,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	// Only the owning product may bind a sandbox to one of its Sessions.
+	SessionId     string `protobuf:"bytes,5,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -215,6 +226,13 @@ func (x *CreateSandboxRequest) GetTtl() *durationpb.Duration {
 		return x.Ttl
 	}
 	return nil
+}
+
+func (x *CreateSandboxRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
 }
 
 type CreateSandboxResponse struct {
@@ -629,6 +647,103 @@ func (x *ResumeSandboxResponse) GetSandbox() *Sandbox {
 	return nil
 }
 
+type RenewSandboxRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	SandboxId string                 `protobuf:"bytes,1,opt,name=sandbox_id,json=sandboxId,proto3" json:"sandbox_id,omitempty"`
+	// Absolute deadline; retries never extend beyond this value.
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenewSandboxRequest) Reset() {
+	*x = RenewSandboxRequest{}
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenewSandboxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenewSandboxRequest) ProtoMessage() {}
+
+func (x *RenewSandboxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenewSandboxRequest.ProtoReflect.Descriptor instead.
+func (*RenewSandboxRequest) Descriptor() ([]byte, []int) {
+	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RenewSandboxRequest) GetSandboxId() string {
+	if x != nil {
+		return x.SandboxId
+	}
+	return ""
+}
+
+func (x *RenewSandboxRequest) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type RenewSandboxResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sandbox       *Sandbox               `protobuf:"bytes,1,opt,name=sandbox,proto3" json:"sandbox,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenewSandboxResponse) Reset() {
+	*x = RenewSandboxResponse{}
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenewSandboxResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenewSandboxResponse) ProtoMessage() {}
+
+func (x *RenewSandboxResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenewSandboxResponse.ProtoReflect.Descriptor instead.
+func (*RenewSandboxResponse) Descriptor() ([]byte, []int) {
+	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RenewSandboxResponse) GetSandbox() *Sandbox {
+	if x != nil {
+		return x.Sandbox
+	}
+	return nil
+}
+
 type DeleteSandboxRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SandboxId     string                 `protobuf:"bytes,1,opt,name=sandbox_id,json=sandboxId,proto3" json:"sandbox_id,omitempty"`
@@ -638,7 +753,7 @@ type DeleteSandboxRequest struct {
 
 func (x *DeleteSandboxRequest) Reset() {
 	*x = DeleteSandboxRequest{}
-	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[11]
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -650,7 +765,7 @@ func (x *DeleteSandboxRequest) String() string {
 func (*DeleteSandboxRequest) ProtoMessage() {}
 
 func (x *DeleteSandboxRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[11]
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -663,7 +778,7 @@ func (x *DeleteSandboxRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSandboxRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSandboxRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{11}
+	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DeleteSandboxRequest) GetSandboxId() string {
@@ -682,7 +797,7 @@ type DeleteSandboxResponse struct {
 
 func (x *DeleteSandboxResponse) Reset() {
 	*x = DeleteSandboxResponse{}
-	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[12]
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -694,7 +809,7 @@ func (x *DeleteSandboxResponse) String() string {
 func (*DeleteSandboxResponse) ProtoMessage() {}
 
 func (x *DeleteSandboxResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[12]
+	mi := &file_kagent_api_v1_sandboxes_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -707,7 +822,7 @@ func (x *DeleteSandboxResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSandboxResponse.ProtoReflect.Descriptor instead.
 func (*DeleteSandboxResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{12}
+	return file_kagent_api_v1_sandboxes_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DeleteSandboxResponse) GetSandbox() *Sandbox {
@@ -721,7 +836,7 @@ var File_kagent_api_v1_sandboxes_proto protoreflect.FileDescriptor
 
 const file_kagent_api_v1_sandboxes_proto_rawDesc = "" +
 	"\n" +
-	"\x1dkagent/api/v1/sandboxes.proto\x12\rkagent.api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1akagent/api/v1/common.proto\x1a\x1bkagent/api/v1/runtime.proto\x1a\x1ckagent/api/v1/sessions.proto\"\x96\x04\n" +
+	"\x1dkagent/api/v1/sandboxes.proto\x12\rkagent.api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1akagent/api/v1/common.proto\x1a\x1bkagent/api/v1/runtime.proto\x1a\x1ckagent/api/v1/sessions.proto\"\xb5\x04\n" +
 	"\aSandbox\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\acreator\x18\x02 \x01(\tR\acreator\x12K\n" +
@@ -737,7 +852,9 @@ const file_kagent_api_v1_sandboxes_proto_rawDesc = "" +
 	"updated_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x129\n" +
 	"\n" +
-	"expires_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xf3\x01\n" +
+	"expires_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\f \x01(\tR\tsessionId\"\x9f\x02\n" +
 	"\x14CreateSandboxRequest\x12S\n" +
 	"\x10sandbox_template\x18\x01 \x01(\v2 .kagent.api.v1.ResourceReferenceB\x06\xbaH\x03\xc8\x01\x01R\x0fsandboxTemplate\x12)\n" +
 	"\n" +
@@ -745,7 +862,9 @@ const file_kagent_api_v1_sandboxes_proto_rawDesc = "" +
 	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\trequestId\x12\x1c\n" +
 	"\x04name\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x04name\x12=\n" +
 	"\x03ttl\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\x10\xbaH\r\xaa\x01\n" +
-	"\"\x04\b\x80\xa3\x052\x02\b\x01R\x03ttl\"I\n" +
+	"\"\x04\b\x80\xa3\x052\x02\b\x01R\x03ttl\x12*\n" +
+	"\n" +
+	"session_id\x18\x05 \x01(\tB\v\xbaH\b\xd8\x01\x01r\x03\xb0\x01\x01R\tsessionId\"I\n" +
 	"\x15CreateSandboxResponse\x120\n" +
 	"\asandbox\x18\x01 \x01(\v2\x16.kagent.api.v1.SandboxR\asandbox\"<\n" +
 	"\x11GetSandboxRequest\x12'\n" +
@@ -768,19 +887,27 @@ const file_kagent_api_v1_sandboxes_proto_rawDesc = "" +
 	"\n" +
 	"sandbox_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\tsandboxId\"I\n" +
 	"\x15ResumeSandboxResponse\x120\n" +
+	"\asandbox\x18\x01 \x01(\v2\x16.kagent.api.v1.SandboxR\asandbox\"\x81\x01\n" +
+	"\x13RenewSandboxRequest\x12'\n" +
+	"\n" +
+	"sandbox_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\tsandboxId\x12A\n" +
+	"\n" +
+	"expires_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\texpiresAt\"H\n" +
+	"\x14RenewSandboxResponse\x120\n" +
 	"\asandbox\x18\x01 \x01(\v2\x16.kagent.api.v1.SandboxR\asandbox\"?\n" +
 	"\x14DeleteSandboxRequest\x12'\n" +
 	"\n" +
 	"sandbox_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\tsandboxId\"I\n" +
 	"\x15DeleteSandboxResponse\x120\n" +
-	"\asandbox\x18\x01 \x01(\v2\x16.kagent.api.v1.SandboxR\asandbox2\xb2\x04\n" +
+	"\asandbox\x18\x01 \x01(\v2\x16.kagent.api.v1.SandboxR\asandbox2\x8b\x05\n" +
 	"\x0eSandboxService\x12Z\n" +
 	"\rCreateSandbox\x12#.kagent.api.v1.CreateSandboxRequest\x1a$.kagent.api.v1.CreateSandboxResponse\x12Q\n" +
 	"\n" +
 	"GetSandbox\x12 .kagent.api.v1.GetSandboxRequest\x1a!.kagent.api.v1.GetSandboxResponse\x12Z\n" +
 	"\rListSandboxes\x12#.kagent.api.v1.ListSandboxesRequest\x1a$.kagent.api.v1.ListSandboxesResponse\x12]\n" +
 	"\x0eSuspendSandbox\x12$.kagent.api.v1.SuspendSandboxRequest\x1a%.kagent.api.v1.SuspendSandboxResponse\x12Z\n" +
-	"\rResumeSandbox\x12#.kagent.api.v1.ResumeSandboxRequest\x1a$.kagent.api.v1.ResumeSandboxResponse\x12Z\n" +
+	"\rResumeSandbox\x12#.kagent.api.v1.ResumeSandboxRequest\x1a$.kagent.api.v1.ResumeSandboxResponse\x12W\n" +
+	"\fRenewSandbox\x12\".kagent.api.v1.RenewSandboxRequest\x1a#.kagent.api.v1.RenewSandboxResponse\x12Z\n" +
 	"\rDeleteSandbox\x12#.kagent.api.v1.DeleteSandboxRequest\x1a$.kagent.api.v1.DeleteSandboxResponseB=Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1b\x06proto3"
 
 var (
@@ -795,7 +922,7 @@ func file_kagent_api_v1_sandboxes_proto_rawDescGZIP() []byte {
 	return file_kagent_api_v1_sandboxes_proto_rawDescData
 }
 
-var file_kagent_api_v1_sandboxes_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_kagent_api_v1_sandboxes_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_kagent_api_v1_sandboxes_proto_goTypes = []any{
 	(*Sandbox)(nil),                // 0: kagent.api.v1.Sandbox
 	(*CreateSandboxRequest)(nil),   // 1: kagent.api.v1.CreateSandboxRequest
@@ -808,53 +935,59 @@ var file_kagent_api_v1_sandboxes_proto_goTypes = []any{
 	(*SuspendSandboxResponse)(nil), // 8: kagent.api.v1.SuspendSandboxResponse
 	(*ResumeSandboxRequest)(nil),   // 9: kagent.api.v1.ResumeSandboxRequest
 	(*ResumeSandboxResponse)(nil),  // 10: kagent.api.v1.ResumeSandboxResponse
-	(*DeleteSandboxRequest)(nil),   // 11: kagent.api.v1.DeleteSandboxRequest
-	(*DeleteSandboxResponse)(nil),  // 12: kagent.api.v1.DeleteSandboxResponse
-	(*ResourceReference)(nil),      // 13: kagent.api.v1.ResourceReference
-	(RuntimeState)(0),              // 14: kagent.api.v1.RuntimeState
-	(RuntimeOperation)(0),          // 15: kagent.api.v1.RuntimeOperation
-	(*Failure)(nil),                // 16: kagent.api.v1.Failure
-	(*timestamppb.Timestamp)(nil),  // 17: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),    // 18: google.protobuf.Duration
-	(*PageRequest)(nil),            // 19: kagent.api.v1.PageRequest
-	(*PageResponse)(nil),           // 20: kagent.api.v1.PageResponse
+	(*RenewSandboxRequest)(nil),    // 11: kagent.api.v1.RenewSandboxRequest
+	(*RenewSandboxResponse)(nil),   // 12: kagent.api.v1.RenewSandboxResponse
+	(*DeleteSandboxRequest)(nil),   // 13: kagent.api.v1.DeleteSandboxRequest
+	(*DeleteSandboxResponse)(nil),  // 14: kagent.api.v1.DeleteSandboxResponse
+	(*ResourceReference)(nil),      // 15: kagent.api.v1.ResourceReference
+	(RuntimeState)(0),              // 16: kagent.api.v1.RuntimeState
+	(RuntimeOperation)(0),          // 17: kagent.api.v1.RuntimeOperation
+	(*Failure)(nil),                // 18: kagent.api.v1.Failure
+	(*timestamppb.Timestamp)(nil),  // 19: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),    // 20: google.protobuf.Duration
+	(*PageRequest)(nil),            // 21: kagent.api.v1.PageRequest
+	(*PageResponse)(nil),           // 22: kagent.api.v1.PageResponse
 }
 var file_kagent_api_v1_sandboxes_proto_depIdxs = []int32{
-	13, // 0: kagent.api.v1.Sandbox.sandbox_template:type_name -> kagent.api.v1.ResourceReference
-	14, // 1: kagent.api.v1.Sandbox.state:type_name -> kagent.api.v1.RuntimeState
-	15, // 2: kagent.api.v1.Sandbox.operation:type_name -> kagent.api.v1.RuntimeOperation
-	16, // 3: kagent.api.v1.Sandbox.failure:type_name -> kagent.api.v1.Failure
-	17, // 4: kagent.api.v1.Sandbox.created_at:type_name -> google.protobuf.Timestamp
-	17, // 5: kagent.api.v1.Sandbox.updated_at:type_name -> google.protobuf.Timestamp
-	17, // 6: kagent.api.v1.Sandbox.expires_at:type_name -> google.protobuf.Timestamp
-	13, // 7: kagent.api.v1.CreateSandboxRequest.sandbox_template:type_name -> kagent.api.v1.ResourceReference
-	18, // 8: kagent.api.v1.CreateSandboxRequest.ttl:type_name -> google.protobuf.Duration
+	15, // 0: kagent.api.v1.Sandbox.sandbox_template:type_name -> kagent.api.v1.ResourceReference
+	16, // 1: kagent.api.v1.Sandbox.state:type_name -> kagent.api.v1.RuntimeState
+	17, // 2: kagent.api.v1.Sandbox.operation:type_name -> kagent.api.v1.RuntimeOperation
+	18, // 3: kagent.api.v1.Sandbox.failure:type_name -> kagent.api.v1.Failure
+	19, // 4: kagent.api.v1.Sandbox.created_at:type_name -> google.protobuf.Timestamp
+	19, // 5: kagent.api.v1.Sandbox.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 6: kagent.api.v1.Sandbox.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 7: kagent.api.v1.CreateSandboxRequest.sandbox_template:type_name -> kagent.api.v1.ResourceReference
+	20, // 8: kagent.api.v1.CreateSandboxRequest.ttl:type_name -> google.protobuf.Duration
 	0,  // 9: kagent.api.v1.CreateSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
 	0,  // 10: kagent.api.v1.GetSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
-	19, // 11: kagent.api.v1.ListSandboxesRequest.page:type_name -> kagent.api.v1.PageRequest
-	13, // 12: kagent.api.v1.ListSandboxesRequest.sandbox_template:type_name -> kagent.api.v1.ResourceReference
+	21, // 11: kagent.api.v1.ListSandboxesRequest.page:type_name -> kagent.api.v1.PageRequest
+	15, // 12: kagent.api.v1.ListSandboxesRequest.sandbox_template:type_name -> kagent.api.v1.ResourceReference
 	0,  // 13: kagent.api.v1.ListSandboxesResponse.sandboxes:type_name -> kagent.api.v1.Sandbox
-	20, // 14: kagent.api.v1.ListSandboxesResponse.page:type_name -> kagent.api.v1.PageResponse
+	22, // 14: kagent.api.v1.ListSandboxesResponse.page:type_name -> kagent.api.v1.PageResponse
 	0,  // 15: kagent.api.v1.SuspendSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
 	0,  // 16: kagent.api.v1.ResumeSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
-	0,  // 17: kagent.api.v1.DeleteSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
-	1,  // 18: kagent.api.v1.SandboxService.CreateSandbox:input_type -> kagent.api.v1.CreateSandboxRequest
-	3,  // 19: kagent.api.v1.SandboxService.GetSandbox:input_type -> kagent.api.v1.GetSandboxRequest
-	5,  // 20: kagent.api.v1.SandboxService.ListSandboxes:input_type -> kagent.api.v1.ListSandboxesRequest
-	7,  // 21: kagent.api.v1.SandboxService.SuspendSandbox:input_type -> kagent.api.v1.SuspendSandboxRequest
-	9,  // 22: kagent.api.v1.SandboxService.ResumeSandbox:input_type -> kagent.api.v1.ResumeSandboxRequest
-	11, // 23: kagent.api.v1.SandboxService.DeleteSandbox:input_type -> kagent.api.v1.DeleteSandboxRequest
-	2,  // 24: kagent.api.v1.SandboxService.CreateSandbox:output_type -> kagent.api.v1.CreateSandboxResponse
-	4,  // 25: kagent.api.v1.SandboxService.GetSandbox:output_type -> kagent.api.v1.GetSandboxResponse
-	6,  // 26: kagent.api.v1.SandboxService.ListSandboxes:output_type -> kagent.api.v1.ListSandboxesResponse
-	8,  // 27: kagent.api.v1.SandboxService.SuspendSandbox:output_type -> kagent.api.v1.SuspendSandboxResponse
-	10, // 28: kagent.api.v1.SandboxService.ResumeSandbox:output_type -> kagent.api.v1.ResumeSandboxResponse
-	12, // 29: kagent.api.v1.SandboxService.DeleteSandbox:output_type -> kagent.api.v1.DeleteSandboxResponse
-	24, // [24:30] is the sub-list for method output_type
-	18, // [18:24] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	19, // 17: kagent.api.v1.RenewSandboxRequest.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 18: kagent.api.v1.RenewSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
+	0,  // 19: kagent.api.v1.DeleteSandboxResponse.sandbox:type_name -> kagent.api.v1.Sandbox
+	1,  // 20: kagent.api.v1.SandboxService.CreateSandbox:input_type -> kagent.api.v1.CreateSandboxRequest
+	3,  // 21: kagent.api.v1.SandboxService.GetSandbox:input_type -> kagent.api.v1.GetSandboxRequest
+	5,  // 22: kagent.api.v1.SandboxService.ListSandboxes:input_type -> kagent.api.v1.ListSandboxesRequest
+	7,  // 23: kagent.api.v1.SandboxService.SuspendSandbox:input_type -> kagent.api.v1.SuspendSandboxRequest
+	9,  // 24: kagent.api.v1.SandboxService.ResumeSandbox:input_type -> kagent.api.v1.ResumeSandboxRequest
+	11, // 25: kagent.api.v1.SandboxService.RenewSandbox:input_type -> kagent.api.v1.RenewSandboxRequest
+	13, // 26: kagent.api.v1.SandboxService.DeleteSandbox:input_type -> kagent.api.v1.DeleteSandboxRequest
+	2,  // 27: kagent.api.v1.SandboxService.CreateSandbox:output_type -> kagent.api.v1.CreateSandboxResponse
+	4,  // 28: kagent.api.v1.SandboxService.GetSandbox:output_type -> kagent.api.v1.GetSandboxResponse
+	6,  // 29: kagent.api.v1.SandboxService.ListSandboxes:output_type -> kagent.api.v1.ListSandboxesResponse
+	8,  // 30: kagent.api.v1.SandboxService.SuspendSandbox:output_type -> kagent.api.v1.SuspendSandboxResponse
+	10, // 31: kagent.api.v1.SandboxService.ResumeSandbox:output_type -> kagent.api.v1.ResumeSandboxResponse
+	12, // 32: kagent.api.v1.SandboxService.RenewSandbox:output_type -> kagent.api.v1.RenewSandboxResponse
+	14, // 33: kagent.api.v1.SandboxService.DeleteSandbox:output_type -> kagent.api.v1.DeleteSandboxResponse
+	27, // [27:34] is the sub-list for method output_type
+	20, // [20:27] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_kagent_api_v1_sandboxes_proto_init() }
@@ -871,7 +1004,7 @@ func file_kagent_api_v1_sandboxes_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kagent_api_v1_sandboxes_proto_rawDesc), len(file_kagent_api_v1_sandboxes_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

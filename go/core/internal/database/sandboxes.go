@@ -24,6 +24,7 @@ type sandboxRow struct {
 	RevisionReceipt     string
 	RequestHash         []byte
 	ExpiresAt           time.Time
+	SessionID           *uuid.UUID
 }
 
 func (r sandboxRow) sandbox() (*apiv1.Sandbox, error) {
@@ -39,6 +40,10 @@ func (r sandboxRow) sandbox() (*apiv1.Sandbox, error) {
 	s.Id, s.Creator = r.ID.String(), r.UserID
 	s.State, s.Operation = state, operation
 	s.PreparedRevision, s.ExpiresAt = r.RevisionReceipt, timestamppb.New(r.ExpiresAt)
+	s.SessionId = ""
+	if r.SessionID != nil {
+		s.SessionId = r.SessionID.String()
+	}
 	if s.SandboxTemplate == nil {
 		s.SandboxTemplate = &apiv1.ResourceReference{}
 	}
@@ -121,6 +126,14 @@ func insertSandbox(ctx context.Context, tx pgx.Tx, request *apiv1.Sandbox, reque
 	if options.TTL < time.Second || options.TTL > 24*time.Hour {
 		return sandboxRow{}, ErrFailedPrecondition
 	}
+	if request.SessionId != "" {
+		if _, err := queryOne(ctx, tx, `SELECT id FROM runtime_instance
+			WHERE id = $1 AND user_id = $2 AND kind = 'agent'
+			AND state NOT IN ('RUNTIME_STATE_DELETED', 'RUNTIME_STATE_DELETING')
+			FOR SHARE`, pgx.RowTo[uuid.UUID], request.SessionId, request.Creator); err != nil {
+			return sandboxRow{}, notFoundOr(err)
+		}
+	}
 	var revision string
 	var createdAt time.Time
 	err := tx.QueryRow(ctx, `
@@ -154,9 +167,9 @@ func insertSandbox(ctx context.Context, tx pgx.Tx, request *apiv1.Sandbox, reque
 		return sandboxRow{}, err
 	}
 	if err := execSQL(ctx, tx, `
-		INSERT INTO sandbox (id, namespace, sandbox_template_name, revision_receipt, request_hash, expires_at, data)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, instance.Id, instance.GetSandboxTemplate().GetNamespace(), instance.GetSandboxTemplate().GetName(), revision, options.RequestHash, instance.ExpiresAt.AsTime(), data); err != nil {
+		INSERT INTO sandbox (id, namespace, sandbox_template_name, revision_receipt, request_hash, expires_at, data, session_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, '')::uuid)
+	`, instance.Id, instance.GetSandboxTemplate().GetNamespace(), instance.GetSandboxTemplate().GetName(), revision, options.RequestHash, instance.ExpiresAt.AsTime(), data, instance.SessionId); err != nil {
 		return sandboxRow{}, err
 	}
 	return readSandbox(ctx, tx, instance.Id)
@@ -171,12 +184,14 @@ func (c *Client) GetSandbox(ctx context.Context, id, userID string) (*apiv1.Sand
 	return row.sandbox()
 }
 
-func (c *Client) ListSandboxes(ctx context.Context, userID, afterID string, limit int, template *apiv1.ResourceReference) ([]*apiv1.Sandbox, error) {
+// ListSandboxes filters by owner and optional immutable Session binding before pagination.
+func (c *Client) ListSandboxes(ctx context.Context, userID, afterID string, limit int, template *apiv1.ResourceReference, sessionID string) ([]*apiv1.Sandbox, error) {
 	rows, err := queryMany(ctx, c.db, `
 		SELECT * FROM sandbox_record WHERE user_id = $1 AND state <> 'RUNTIME_STATE_DELETED'
 		    AND ($2::text = '' OR id > NULLIF($2, '')::uuid)
-		    AND ($4::text = '' OR (namespace = $4 AND sandbox_template_name = $5)) ORDER BY id LIMIT $3
-	`, pgx.RowToStructByName[sandboxRow], userID, afterID, limit, template.GetNamespace(), template.GetName())
+		    AND ($4::text = '' OR (namespace = $4 AND sandbox_template_name = $5))
+		    AND ($6::text = '' OR session_id = NULLIF($6, '')::uuid) ORDER BY id LIMIT $3
+	`, pgx.RowToStructByName[sandboxRow], userID, afterID, limit, template.GetNamespace(), template.GetName(), sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +217,7 @@ func lockSandbox(ctx context.Context, tx pgx.Tx, id string) (sandboxRow, error) 
 type SandboxOperation = RuntimeOperation[*apiv1.Sandbox]
 
 func (c *Client) BeginSandboxOperation(ctx context.Context, id string, kind apiv1.RuntimeOperation) (*SandboxOperation, error) {
-	var result SandboxOperation
+	var result *SandboxOperation
 	err := c.withTx(ctx, func(tx pgx.Tx) error {
 		row, err := lockSandbox(ctx, tx, id)
 		if err != nil {
@@ -217,36 +232,10 @@ func (c *Client) BeginSandboxOperation(ctx context.Context, id string, kind apiv
 				return ErrFailedPrecondition
 			}
 		}
-		needed, err := sandboxOperationNeeded(row.runtimeInstanceRow, kind)
-		if err != nil {
-			return err
-		}
-		if needed {
-			if row.ExecutorID != nil {
-				active, err := queryOne(ctx, tx, `SELECT executor_expires_at > clock_timestamp() FROM runtime_instance WHERE id = $1`, pgx.RowTo[bool], id)
-				if err != nil {
-					return err
-				}
-				if active {
-					return ErrConflict
-				}
-			}
-			row, err = beginSandboxOperation(ctx, tx, row, kind)
-			if err != nil {
-				return err
-			}
-		}
-		instance, err := row.sandbox()
-		if err != nil {
-			return err
-		}
-		result = runtimeOperationFor(row.runtimeInstanceRow, instance)
-		return nil
+		result, err = prepareSandboxOperation(ctx, tx, row, kind)
+		return err
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
+	return result, err
 }
 
 // Sandbox lifecycle requests may supersede pending work after its active attempt

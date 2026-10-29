@@ -9,7 +9,8 @@ import (
 
 type sessionServer struct {
 	apiv1.UnimplementedSessionServiceServer
-	service *sessionsvc.Service
+	service   *sessionsvc.Service
+	workspace *sessionsvc.WorkspaceService
 }
 
 func (s *sessionServer) CreateSession(ctx context.Context, request *apiv1.CreateSessionRequest) (*apiv1.CreateSessionResponse, error) {

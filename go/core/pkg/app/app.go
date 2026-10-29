@@ -322,10 +322,6 @@ func Run(ctx context.Context, input *configv1.ControllerConfig, opts Options) er
 		}
 	}
 	mcpClient := toolservice.NewRuntimeMCPClient(manager.GetClient())
-	remoteMCPDiscovery := remotemcpcontroller.New(manager.GetClient(), mcpClient, store)
-	if err := remoteMCPDiscovery.SetupWithManager(manager); err != nil {
-		return fmt.Errorf("set up RemoteMCPServer discovery: %w", err)
-	}
 
 	authenticator, authorizer := opts.resolve()
 	if machine := cfg.GetServer().GetAuth().GetServiceAccount(); machine != nil {
@@ -359,6 +355,15 @@ func Run(ctx context.Context, input *configv1.ControllerConfig, opts Options) er
 	}
 	shareMaxTTL := cfg.GetSessions().GetShareMaxTtl().AsDuration()
 	sessions := sessionsvc.NewService(store, authorizer, sessionWorkflow, sessionsvc.WithShareMaxTTL(shareMaxTTL))
+	workspaceDialer, err := sessionsvc.NewWorkspaceDialer(cfg.GetSubstrate().GetRouterUrl(), authenticator)
+	if err != nil {
+		return err
+	}
+	defer workspaceDialer.Close()
+	workspaces := sessionsvc.NewWorkspaceService(store, sessions, sessionWorkflow, workspaceDialer, quiescenceInterval)
+	if err := manager.Add(workspaces); err != nil {
+		return fmt.Errorf("register workspace recovery worker: %w", err)
+	}
 	checkpoints := checkpoint.NewService(store, authorizer, actors, sessionWorkflow)
 	gatewayDialer, err := a2agateway.NewRuntimeDialer(
 		cfg.GetSubstrate().GetRouterUrl(),
@@ -422,6 +427,17 @@ func Run(ctx context.Context, input *configv1.ControllerConfig, opts Options) er
 	if err != nil {
 		return err
 	}
+	builtinTools, err := mcpHandler.ToolCatalog(ctx)
+	if err != nil {
+		return err
+	}
+	remoteMCPDiscovery := remotemcpcontroller.New(manager.GetClient(), mcpClient, store, remotemcpcontroller.BuiltinCatalog{
+		Endpoint: strings.TrimRight(cfg.GetRuntimeDefaults().GetControlPlaneUrl(), "/") + "/mcp",
+		Tools:    builtinTools,
+	})
+	if err := remoteMCPDiscovery.SetupWithManager(manager); err != nil {
+		return fmt.Errorf("set up RemoteMCPServer discovery: %w", err)
+	}
 	policies, err := mergePolicies(grpcserver.DefaultMethodPolicies(), opts.MethodPolicies)
 	if err != nil {
 		return err
@@ -451,6 +467,7 @@ func Run(ctx context.Context, input *configv1.ControllerConfig, opts Options) er
 		MemoryService:         memory,
 		TaskStoreService:      runtimeTasks,
 		SessionService:        sessions,
+		WorkspaceService:      workspaces,
 		ScheduledRunService:   schedules,
 		// Author Agents and their reusable configuration through the API.
 		AgentService:           agents,

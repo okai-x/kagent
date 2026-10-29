@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kagent-sdk"
+version = "0.1.0"
+description = "Async Python client for kagent sessions, A2A, and sandboxes"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["kagent-proto==0.1.0", "grpcio>=1.84.1", "a2a-sdk>=1.1.5,<2"]
+
+[tool.uv.sources]
+kagent-proto = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kagent"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
