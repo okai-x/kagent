@@ -9,5 +9,9 @@ spec:
   description: "Kagent API tools for Sessions, checkpoints, and sandboxes"
   protocol: STREAMABLE_HTTP
   url: "http://{{ include "kagent.controllerServiceAuthority" . }}/mcp"
+  # Substrate replaces an existing header; it does not inject an absent one.
+  headersFrom:
+    - name: Authorization
+      value: Bearer kagent-credential-injected
   timeout: 30s
   sseReadTimeout: 5m0s

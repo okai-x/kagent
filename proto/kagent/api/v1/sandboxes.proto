@@ -27,6 +27,7 @@ service SandboxService {
   rpc ListSandboxes(ListSandboxesRequest) returns (ListSandboxesResponse);
   rpc SuspendSandbox(SuspendSandboxRequest) returns (SuspendSandboxResponse);
   rpc ResumeSandbox(ResumeSandboxRequest) returns (ResumeSandboxResponse);
+  rpc RenewSandbox(RenewSandboxRequest) returns (RenewSandboxResponse);
   rpc DeleteSandbox(DeleteSandboxRequest) returns (DeleteSandboxResponse);
 }
 
@@ -42,6 +43,8 @@ message Sandbox {
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
   google.protobuf.Timestamp expires_at = 11;
+  // Immutable conversation binding. Empty for standalone product-owned sandboxes.
+  string session_id = 12;
 }
 
 message CreateSandboxRequest {
@@ -55,6 +58,11 @@ message CreateSandboxRequest {
   google.protobuf.Duration ttl = 4 [(buf.validate.field).duration = {
     gte: {seconds: 1}
     lte: {seconds: 86400}
+  }];
+  // Only the owning product may bind a sandbox to one of its Sessions.
+  string session_id = 5 [(buf.validate.field) = {
+    ignore: IGNORE_IF_ZERO_VALUE
+    string: {uuid: true}
   }];
 }
 message CreateSandboxResponse {
@@ -84,6 +92,14 @@ message ResumeSandboxRequest {
   string sandbox_id = 1 [(buf.validate.field).string.uuid = true];
 }
 message ResumeSandboxResponse {
+  Sandbox sandbox = 1;
+}
+message RenewSandboxRequest {
+  string sandbox_id = 1 [(buf.validate.field).string.uuid = true];
+  // Absolute deadline; retries never extend beyond this value.
+  google.protobuf.Timestamp expires_at = 2 [(buf.validate.field).required = true];
+}
+message RenewSandboxResponse {
   Sandbox sandbox = 1;
 }
 message DeleteSandboxRequest {

@@ -23,6 +23,8 @@ const (
 
 type Store interface {
 	runtimeauth.SessionStore
+	HasSessionSandboxBinding(context.Context, string) (bool, error)
+	GetRuntimeRevision(context.Context, string) (*database.RuntimeRevision, error)
 	StoreAgentMemories(context.Context, ...*database.Memory) error
 	SearchAgentMemory(context.Context, string, string, pgvector.Vector, int) ([]database.AgentMemorySearchResult, error)
 	ListAgentMemories(context.Context, string, string) ([]database.Memory, error)
@@ -228,6 +230,23 @@ func (s *Service) scope(ctx context.Context, verb auth.Verb) (string, string, er
 	session, err := runtimeauth.Session(ctx, s.store)
 	if err != nil {
 		return "", "", err
+	}
+	bound, err := s.store.HasSessionSandboxBinding(ctx, session.Id)
+	if err != nil {
+		return "", "", serviceerrors.NewInternal("failed to resolve memory scope", err)
+	}
+	if bound {
+		return "", "", serviceerrors.NewPermissionDenied("Sandbox-bound Sessions cannot access shared Memory", nil)
+	}
+	if session.PreparedRevision == "" {
+		return "", "", serviceerrors.NewPermissionDenied("Session has no Memory-enabled revision", nil)
+	}
+	revision, err := s.store.GetRuntimeRevision(ctx, session.PreparedRevision)
+	if err != nil {
+		return "", "", serviceerrors.NewInternal("failed to resolve memory policy", err)
+	}
+	if revision == nil || !revision.MemoryEnabled {
+		return "", "", serviceerrors.NewPermissionDenied("Session revision does not enable shared Memory", nil)
 	}
 	if session.GetAgent().GetNamespace() == "" || session.GetAgent().GetName() == "" || session.Creator == "" {
 		return "", "", serviceerrors.NewPermissionDenied("actor has no memory scope", nil)

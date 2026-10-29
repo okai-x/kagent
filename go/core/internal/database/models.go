@@ -67,6 +67,7 @@ type RuntimeRevision struct {
 	AgentUID                string
 	SourceSnapshot          json.RawMessage
 	AgentCard               *a2apb.AgentCard
+	MemoryEnabled           bool
 	Credentials             []egress.Credential
 	EgressDestinations      []string
 	TokenPassthroughTargets []egresspolicy.GatewayTarget

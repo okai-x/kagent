@@ -240,6 +240,18 @@ The service checks the verified actor name against the requested session and
 matches its atespace and recorded Actor UID. Memory derives its agent namespace
 and user from that persisted session binding, ignoring caller-supplied identity
 fields. Users can also list and delete their own memories on the same endpoint.
+Every Actor Memory operation also requires the Session's pinned runtime revision
+to have explicitly enabled ADK memory. The compiler derives this policy from
+validated runtime configuration; the store persists it immutably with the
+revision. Missing or malformed revision records fail closed. Sandbox-bound
+Sessions remain denied even when their revision enables memory.
+
+Revisions predating this policy default to disabled. Recording the same revision
+again cannot enable memory for existing Sessions; an actual configuration change
+must produce a new revision, and new Sessions must select it. Explicitly enabled
+memory remains shared by Agent and owner, so isolated product workspaces must use
+a Harness without memory. Human memory management retains its existing policy.
+
 Both actor and user memory operations check the `Memory` resource, whose name is
 the agent key (including legacy keys). User management calls use the requested
 agent key and the authenticated user ID,

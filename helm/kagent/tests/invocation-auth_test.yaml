@@ -67,3 +67,15 @@ tests:
           path: subjects[0].name
           value: scheduler
         documentIndex: 1
+  - it: grants TokenReview in service-account-only mode
+    template: rbac/invocation-auth.yaml
+    set:
+      config.server.auth.mode: service-account
+      config.server.auth.serviceAccount.authority: cluster-a
+    asserts:
+      - hasDocuments:
+          count: 2
+      - equal:
+          path: rules[0].resources
+          value: [tokenreviews]
+        documentIndex: 0

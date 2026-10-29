@@ -12,9 +12,42 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	apiv1 "github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1"
 )
+
+func TestSandboxBindingAndRenewalValidation(t *testing.T) {
+	validator, err := protovalidate.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "11111111-1111-4111-8111-111111111111"
+	ref := &apiv1.ResourceReference{Namespace: "team-a", Name: "scratch"}
+	for _, test := range []struct {
+		name    string
+		request proto.Message
+		valid   bool
+	}{
+		{"standalone", &apiv1.CreateSandboxRequest{SandboxTemplate: ref, RequestId: "request"}, true},
+		{"bound", &apiv1.CreateSandboxRequest{SandboxTemplate: ref, RequestId: "request", SessionId: id}, true},
+		{"invalid binding", &apiv1.CreateSandboxRequest{SandboxTemplate: ref, RequestId: "request", SessionId: "other/session"}, false},
+		{"renew", &apiv1.RenewSandboxRequest{SandboxId: id, ExpiresAt: timestamppb.Now()}, true},
+		{"renew without deadline", &apiv1.RenewSandboxRequest{SandboxId: id}, false},
+		{"renew invalid id", &apiv1.RenewSandboxRequest{SandboxId: "invalid", ExpiresAt: timestamppb.Now()}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			handled := false
+			_, err := protovalidatemiddleware.UnaryServerInterceptor(validator)(
+				t.Context(), test.request, &grpc.UnaryServerInfo{},
+				func(context.Context, any) (any, error) { handled = true; return nil, nil },
+			)
+			if handled != test.valid || (err == nil) != test.valid {
+				t.Fatalf("handled = %t, error = %v, valid = %t", handled, err, test.valid)
+			}
+		})
+	}
+}
 
 func TestProtovalidateUnaryInterceptor(t *testing.T) {
 	validator, err := protovalidate.New()

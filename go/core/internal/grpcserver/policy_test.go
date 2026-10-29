@@ -99,6 +99,7 @@ func TestAgentIdentityRequiresItsOwnAuthenticator(t *testing.T) {
 func TestSandboxGuestPoliciesMatchTheirEffect(t *testing.T) {
 	policies := DefaultMethodPolicies()
 	for method, expected := range map[string]pkgauth.AccessMode{
+		apiv1.SandboxService_RenewSandbox_FullMethodName:          pkgauth.AccessUpdate,
 		guestpb.ProcessService_StartProcess_FullMethodName:        pkgauth.AccessCreate,
 		guestpb.ProcessService_GetProcess_FullMethodName:          pkgauth.AccessRead,
 		guestpb.ProcessService_SignalProcess_FullMethodName:       pkgauth.AccessUpdate,

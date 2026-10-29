@@ -151,10 +151,16 @@ message ControllerServerConfig {
 }
 
 message AuthenticationConfig {
+  option (buf.validate.message).cel = {
+    id: "authentication.service_account_required"
+    message: "service-account mode requires service_account.authority"
+    expression: "this.mode != 'service-account' || has(this.service_account)"
+  };
   optional string mode = 1 [(buf.validate.field).string = {
     in: [
       "insecure",
-      "trusted-proxy"
+      "trusted-proxy",
+      "service-account"
     ]
   }];
   string user_id_claim = 2;

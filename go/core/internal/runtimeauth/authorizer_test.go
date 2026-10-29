@@ -63,7 +63,9 @@ func TestActorPolicyDoesNotInheritOwnerPermissions(t *testing.T) {
 			{"share", auth.VerbCreate, auth.Resource{Type: "SessionShare", Name: store.session.Id}, false},
 			{"own memory", auth.VerbList, auth.Resource{Type: "Memory", Name: "team-a/agent"}, true},
 			{"other memory", auth.VerbDelete, auth.Resource{Type: "Memory", Name: "team-a/other"}, false},
-			{"sandbox", auth.VerbGet, auth.Resource{Type: "Sandbox", Name: store.session.Id}, false},
+			{"sandbox service applies binding", auth.VerbGet, auth.Resource{Type: "Sandbox", Name: store.session.Id}, true},
+			{"sandbox creation", auth.VerbCreate, auth.Resource{Type: "Sandbox"}, false},
+			{"sandbox deletion", auth.VerbDelete, auth.Resource{Type: "Sandbox", Name: store.session.Id}, false},
 			{"namespaces", auth.VerbGet, auth.Resource{Type: "SystemNamespaces"}, false},
 			{"unknown", auth.VerbGet, auth.Resource{Type: "Extension"}, false},
 		} {

@@ -35,6 +35,7 @@ from kagent.core.a2a import (
 )
 from kagent.core.a2a._task_store import KAgentRequestHandler, KAgentTaskStore
 from kagent.core.telemetry import shutdown_lifespan
+from kagent.runtime.v1 import workspace_pb2_grpc
 from opentelemetry.instrumentation.grpc import aio_server_interceptor, filters
 
 from ._agent_executor import A2aAgentExecutor, A2aAgentExecutorConfig
@@ -42,6 +43,7 @@ from ._lifespan import LifespanManager
 from ._local_session_service import LocalSessionService
 from ._memory_service import KagentMemoryService
 from ._token import KAgentTokenService
+from ._workspace import WorkspaceService
 from .types import Config
 
 logger = logging.getLogger(__name__)
@@ -172,11 +174,11 @@ class KAgentApp:
         lifespan_manager = LifespanManager()
         lifespan_manager.add(shutdown_lifespan())
         lifespan_manager.add(self._lifespan)
-        lifespan_manager.add(self._grpc_lifespan(request_handler))
-        lifespan_manager.add(self._readiness_lifespan())
         if not local:
             lifespan_manager.add(token_service.lifespan())
             lifespan_manager.add(controller_client.lifespan())
+        lifespan_manager.add(self._grpc_lifespan(request_handler, controller_client))
+        lifespan_manager.add(self._readiness_lifespan())
 
         app = FastAPI(lifespan=lifespan_manager)
         app.add_middleware(
@@ -219,7 +221,9 @@ class KAgentApp:
 
         return lifespan
 
-    def _grpc_lifespan(self, request_handler: DefaultRequestHandlerV2):
+    def _grpc_lifespan(
+        self, request_handler: DefaultRequestHandlerV2, controller_client: AsyncControllerClient | None = None
+    ):
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             server = grpc.aio.server(
@@ -229,6 +233,8 @@ class KAgentApp:
             a2a_pb2_grpc.add_A2AServiceServicer_to_server(
                 GrpcHandler(request_handler, context_builder=context_builder), server
             )
+            if controller_client is not None:
+                workspace_pb2_grpc.add_WorkspaceServiceServicer_to_server(WorkspaceService(controller_client), server)
 
             health_service = health.aio.HealthServicer()
             service_name = a2a_pb2.DESCRIPTOR.services_by_name["A2AService"].full_name

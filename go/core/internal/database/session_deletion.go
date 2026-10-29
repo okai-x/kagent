@@ -30,10 +30,12 @@ func beginSessionDeletion(ctx context.Context, tx pgx.Tx, row sessionRow, reason
 }
 
 // finishSessionDeletion releases expired creation receipts. Explicit deletion
-// retains its tombstone so the original request cannot recreate compute.
+// and Sandbox bindings retain the tombstone so a receipt cannot recreate compute
+// or break an immutable binding.
 func finishSessionDeletion(ctx context.Context, tx pgx.Tx, id uuid.UUID) error {
 	return execSQL(ctx, tx, `
 		DELETE FROM runtime_instance r USING session s
 		WHERE r.id = $1 AND s.id = r.id AND s.deletion_reason = 'idle_timeout'
+		    AND NOT EXISTS (SELECT 1 FROM sandbox b WHERE b.session_id = s.id)
 	`, id)
 }

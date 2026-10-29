@@ -98,6 +98,8 @@ func controllerAuthenticator(mode, userIDClaim string) (auth.AuthProvider, error
 		return &authimpl.InsecureAuthenticator{}, nil
 	case "trusted-proxy":
 		return authimpl.NewProxyAuthenticator(userIDClaim), nil
+	case "service-account":
+		return &authimpl.RejectUserAuthenticator{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported server.auth.mode %q", mode)
 	}

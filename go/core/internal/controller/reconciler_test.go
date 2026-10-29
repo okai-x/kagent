@@ -38,7 +38,7 @@ func TestReconcilerPersistsPairInOrder(t *testing.T) {
 	opts := krt.NewOptionsBuilder(stop, "test", nil)
 	template := &kagentv1alpha3.Agent{ObjectMeta: metav1.ObjectMeta{Namespace: "team-a", Name: "assistant", UID: "template-uid"}}
 	desiredActor := &ateapipb.ActorTemplate{Metadata: &ateapipb.ResourceMetadata{Atespace: "team-a", Name: "assistant-kagent-revision"}}
-	revision := &translator.Revision{AgentCard: &a2apb.AgentCard{Name: "assistant"}}
+	revision := &translator.Revision{AgentCard: &a2apb.AgentCard{Name: "assistant"}, MemoryEnabled: true}
 	revision.AgentCard.ProtoReflect().SetUnknown(protowire.AppendString(protowire.AppendTag(nil, 1000, protowire.BytesType), "future"))
 	revisionID, err := revision.Digest()
 	if err != nil {
@@ -82,6 +82,7 @@ func TestReconcilerPersistsPairInOrder(t *testing.T) {
 	}
 
 	require.True(t, proto.Equal(revision.AgentCard, store.revision.AgentCard))
+	require.True(t, store.revision.MemoryEnabled, "persist the compiled memory policy before accepting sessions")
 
 	templates.template = proto.CloneOf(created)
 	templates.template.Status = &ateapipb.ActorTemplateStatus{GoldenSnapshotStatus: &ateapipb.GoldenSnapshotStatus{GoldenTag: &ateapipb.ObjectRef{Atespace: "ate-golden", Name: "golden"}}}

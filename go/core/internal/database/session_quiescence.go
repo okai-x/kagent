@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/google/uuid"
@@ -11,8 +12,8 @@ import (
 	apiv1 "github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1"
 )
 
-// SessionQuiescence grants one worker permission to suspend an idle session
-// and record its snapshot. Task publication has already completed.
+// SessionQuiescence grants one worker a bounded read-only preparation claim.
+// IssueSessionQuiescence must authorize the runtime mutation before it is sent.
 type SessionQuiescence struct {
 	Session    *apiv1.Session
 	TaskID     string
@@ -22,15 +23,14 @@ type SessionQuiescence struct {
 }
 
 // HasPendingSessionQuiescence includes ready sessions temporarily blocked by
-// dispatch, checkpoints, lifecycle operations, or row locks. Already claimed
-// work is excluded: its runtime outcome may be uncertain and cannot be retried
-// by another worker. Suspended/deleted sessions need no automatic runtime work.
+// dispatch, checkpoints, lifecycle operations, row locks, or preparation leases.
+// Issued work is excluded: its runtime outcome cannot safely be retried.
 func (c *Client) HasPendingSessionQuiescence(ctx context.Context) (bool, error) {
 	return queryOne(ctx, c.db, `
 		SELECT EXISTS (
 			SELECT 1 FROM session_task_event e JOIN session_record i ON i.history_id = e.history_id
 			WHERE e.published AND e.quiescence_pending = TRUE
-			  AND e.quiescence_executor_id IS NULL
+			  AND (e.quiescence_executor_id IS NULL OR e.quiescence_phase = 'PREPARING')
 			  AND i.state = 'RUNTIME_STATE_READY'
 		)
 	`, pgx.RowTo[bool])
@@ -39,8 +39,13 @@ func (c *Client) HasPendingSessionQuiescence(ctx context.Context) (bool, error) 
 // ClaimSessionQuiescence claims an idle session at its latest settled task
 // version. A new turn supersedes unclaimed idle work; a claim blocks task writes,
 // checkpoints, and explicit lifecycle operations until it finishes. Missing work
-// returns ErrNotFound. Uncertain issued work is never reassigned after a timeout.
+// returns ErrNotFound. Only read-only preparation can be reassigned after its
+// lease expires; the old executor must fail Issue before making a runtime call.
 func (c *Client) ClaimSessionQuiescence(ctx context.Context) (*SessionQuiescence, error) {
+	lifetime := RuntimeOperationTimeout
+	if deadline, ok := ctx.Deadline(); ok {
+		lifetime = min(lifetime, time.Until(deadline))
+	}
 	var result *SessionQuiescence
 	err := c.withTx(ctx, func(tx pgx.Tx) error {
 		type candidate struct {
@@ -52,11 +57,13 @@ func (c *Client) ClaimSessionQuiescence(ctx context.Context) (*SessionQuiescence
 			SELECT i.id::text AS session_id, e.task_id, e.sequence
 			FROM session_task_event e JOIN session_record i ON i.history_id = e.history_id
 			WHERE e.published AND e.quiescence_pending = TRUE
-			  AND e.quiescence_executor_id IS NULL
+			  AND (e.quiescence_executor_id IS NULL OR e.quiescence_phase = 'PREPARING')
+			  AND (e.quiescence_expires_at IS NULL OR e.quiescence_expires_at <= clock_timestamp())
 			  AND i.state = 'RUNTIME_STATE_READY'
 			  AND i.operation = 'RUNTIME_OPERATION_NONE'
 			  AND (i.dispatch_expires_at IS NULL OR i.dispatch_expires_at <= clock_timestamp())
 			  AND NOT EXISTS (SELECT 1 FROM session_checkpoint WHERE source_session_id = i.id AND state = 'CREATING')
+			  AND NOT EXISTS (SELECT 1 FROM session_workspace_access WHERE session_id = i.id AND phase <> 'RELEASED')
 			ORDER BY e.sequence LIMIT 1 FOR UPDATE OF i SKIP LOCKED
 		`, pgx.RowToStructByName[candidate])
 		if err != nil {
@@ -85,12 +92,16 @@ func (c *Client) ClaimSessionQuiescence(ctx context.Context) (*SessionQuiescence
 		// Recheck after locking: the candidate query's snapshot may predate a
 		// new turn that committed just before we acquired the session lock.
 		tag, err := tx.Exec(ctx, `
-			UPDATE session_task_event SET quiescence_executor_id = $2
+			UPDATE session_task_event SET quiescence_executor_id = $2,
+			    quiescence_phase = 'PREPARING',
+			    quiescence_expires_at = clock_timestamp() + $4 * interval '1 millisecond'
 			WHERE sequence = $1 AND published AND quiescence_pending
-			  AND quiescence_executor_id IS NULL
+			  AND (quiescence_executor_id IS NULL OR quiescence_phase = 'PREPARING')
+			  AND (quiescence_expires_at IS NULL OR quiescence_expires_at <= clock_timestamp())
 			  AND NOT EXISTS (SELECT 1 FROM session WHERE id = $3 AND dispatch_expires_at > clock_timestamp())
 			  AND NOT EXISTS (SELECT 1 FROM session_checkpoint WHERE source_session_id = $3 AND state = 'CREATING')
-		`, result.Version, result.ExecutorID, session.ID)
+			  AND NOT EXISTS (SELECT 1 FROM session_workspace_access WHERE session_id = $3 AND phase <> 'RELEASED')
+		`, result.Version, result.ExecutorID, session.ID, lifetime.Milliseconds()+1)
 		if err != nil {
 			return err
 		}
@@ -100,6 +111,46 @@ func (c *Client) ClaimSessionQuiescence(ctx context.Context) (*SessionQuiescence
 		return nil
 	})
 	return result, err
+}
+
+// IssueSessionQuiescence fences stale preparers and records the immutable actor
+// UID and observed snapshot generation before permitting a single suspend call.
+// Issued work never expires: Substrate has no request ID or generation fence.
+func (c *Client) IssueSessionQuiescence(ctx context.Context, work *SessionQuiescence, actorUID string, generation int32) error {
+	if work == nil || work.ExecutorID == uuid.Nil || actorUID == "" || generation < 0 {
+		return ErrFailedPrecondition
+	}
+	tag, err := c.db.Exec(ctx, `
+		UPDATE session_task_event SET quiescence_phase = 'ISSUED', quiescence_expires_at = NULL,
+		    quiescence_actor_uid = $4, quiescence_snapshot_generation = $5
+		WHERE sequence = $1 AND task_id = $2 AND quiescence_executor_id = $3
+		    AND quiescence_pending AND quiescence_phase = 'PREPARING'
+		    AND quiescence_expires_at > clock_timestamp()
+		    AND history_id = (SELECT history_id FROM session WHERE id = $6 AND actor_uid = $4)
+	`, work.Version, work.TaskID, work.ExecutorID, actorUID, generation, work.Session.Id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrConflict
+	}
+	return nil
+}
+
+// ReleaseSessionQuiescence releases only failed read-only preparation and leaves
+// a short retry delay. It never clears issued intent or another executor's claim.
+func (c *Client) ReleaseSessionQuiescence(ctx context.Context, work *SessionQuiescence) error {
+	if work == nil || work.ExecutorID == uuid.Nil {
+		return ErrFailedPrecondition
+	}
+	_, err := c.db.Exec(ctx, `
+		UPDATE session_task_event SET quiescence_executor_id = NULL, quiescence_phase = NULL,
+		    quiescence_expires_at = clock_timestamp() + $4 * interval '1 millisecond'
+		WHERE sequence = $1 AND task_id = $2 AND quiescence_executor_id = $3
+		    AND quiescence_pending AND quiescence_phase = 'PREPARING'
+		    AND history_id = (SELECT history_id FROM session WHERE id = $5)
+	`, work.Version, work.TaskID, work.ExecutorID, time.Second.Milliseconds(), work.Session.Id)
+	return err
 }
 
 // FinishSessionQuiescence records a claimed suspension outcome and releases

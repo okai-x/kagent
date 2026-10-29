@@ -40,13 +40,27 @@ func (p *memoryRPCPolicy) Check(_ context.Context, principal auth.Principal, ver
 }
 
 type memoryRPCStore struct {
-	mu      sync.Mutex
-	rows    map[string][]database.Memory
-	calls   int
-	session *apiv1.Session
+	mu            sync.Mutex
+	rows          map[string][]database.Memory
+	calls         int
+	session       *apiv1.Session
+	sessions      map[string]*apiv1.Session
+	boundSessions map[string]bool
+	bindingError  error
+	memoryEnabled bool
 }
 
 var _ memorysvc.Store = (*memoryRPCStore)(nil)
+
+func (s *memoryRPCStore) HasSessionSandboxBinding(_ context.Context, id string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.boundSessions[id], s.bindingError
+}
+
+func (s *memoryRPCStore) GetRuntimeRevision(context.Context, string) (*database.RuntimeRevision, error) {
+	return &database.RuntimeRevision{MemoryEnabled: s.memoryEnabled}, nil
+}
 
 func (s *memoryRPCStore) StoreAgentMemories(_ context.Context, memories ...*database.Memory) error {
 	s.mu.Lock()
@@ -85,10 +99,14 @@ func (s *memoryRPCStore) DeleteAgentMemory(_ context.Context, agent, user string
 func (s *memoryRPCStore) GetSessionForRuntime(_ context.Context, id, uid string) (*apiv1.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.session == nil || s.session.Id != id || uid != "actor-uid" {
+	session := s.session
+	if s.sessions != nil {
+		session = s.sessions[id]
+	}
+	if session == nil || session.Id != id || uid != "actor-uid" {
 		return nil, database.ErrNotFound
 	}
-	return s.session, nil
+	return session, nil
 }
 func (s *memoryRPCStore) callCount() int { s.mu.Lock(); defer s.mu.Unlock(); return s.calls }
 func memoryVector() []float32            { v := make([]float32, memorysvc.VectorDimension); v[0] = 1; return v }
@@ -102,7 +120,7 @@ func memoryUserContext(t *testing.T, user string) context.Context {
 }
 
 func TestHumanMemoryPermissionsAndPartitionsThroughGeneratedClient(t *testing.T) {
-	store := &memoryRPCStore{rows: map[string][]database.Memory{
+	store := &memoryRPCStore{memoryEnabled: true, rows: map[string][]database.Memory{
 		"agent/" + auth.PrincipalID("trusted-proxy:", "alice"): {{ID: "alice-memory", Content: "private"}},
 		"agent/" + auth.PrincipalID("trusted-proxy:", "bob"):   {{ID: "bob-memory", Content: "bob private"}},
 		"other/" + auth.PrincipalID("trusted-proxy:", "alice"): {{ID: "other-agent", Content: "other Agent"}},
@@ -173,10 +191,10 @@ func TestHumanMemoryPermissionsAndPartitionsThroughGeneratedClient(t *testing.T)
 
 func TestRuntimeMemoryUsesAcceptedActorBindingInsteadOfHumanClaims(t *testing.T) {
 	id := "11111111-1111-4111-8111-111111111111"
-	store := &memoryRPCStore{rows: map[string][]database.Memory{
+	store := &memoryRPCStore{memoryEnabled: true, rows: map[string][]database.Memory{
 		"team/assistant/victim": {{ID: "other-user"}},
 		"forged/agent/owner":    {{ID: "other-agent"}},
-	}, session: &apiv1.Session{Id: id, Creator: "owner", Agent: &apiv1.ResourceReference{Namespace: "team", Name: "assistant"}, A2AAuthority: substrate.ActorHost("team", substrate.ActorName(id), "")}}
+	}, session: &apiv1.Session{Id: id, Creator: "owner", PreparedRevision: "revision", Agent: &apiv1.ResourceReference{Namespace: "team", Name: "assistant"}, A2AAuthority: substrate.ActorHost("team", substrate.ActorName(id), "")}}
 	policy := &memoryRPCPolicy{}
 	policy.denied.Store(true) // Accepted runtime authority survives later human grant removal.
 	issuer := jwttest.New(t)

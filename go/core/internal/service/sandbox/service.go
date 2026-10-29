@@ -64,6 +64,9 @@ func (s *Service) Create(ctx context.Context, request *apiv1.CreateSandboxReques
 	if err != nil {
 		return nil, err
 	}
+	if principal.RuntimeBinding != nil {
+		return nil, serviceerrors.NewPermissionDenied("Runtime actors cannot create sandboxes", nil)
+	}
 	ref := request.GetSandboxTemplate()
 	template := &v1alpha3.SandboxTemplate{}
 	err = s.config.Kube.Get(ctx, types.NamespacedName{Namespace: ref.GetNamespace(), Name: ref.GetName()}, template)
@@ -95,7 +98,7 @@ func (s *Service) Create(ctx context.Context, request *apiv1.CreateSandboxReques
 		return nil, err
 	}
 	instance, _, err := s.config.Store.CreateSandbox(ctx, &apiv1.Sandbox{
-		Id: id.String(), Creator: principal.ID, Name: request.Name, SandboxTemplate: ref,
+		Id: id.String(), Creator: principal.ID, Name: request.Name, SandboxTemplate: ref, SessionId: request.SessionId,
 	}, request.RequestId, database.SandboxCreateOptions{RequestHash: hash, TemplateUID: string(template.UID), TTL: ttl})
 	if errors.Is(err, database.ErrNotFound) {
 		return nil, serviceerrors.NewFailedPrecondition("SandboxTemplate has no prepared revision", err)
@@ -111,7 +114,14 @@ func (s *Service) authorized(ctx context.Context, id string, verb auth.Verb) (*a
 	if err != nil {
 		return nil, err
 	}
-	instance, err := s.config.Store.GetSandbox(ctx, id, principal.ID)
+	owner := principal.ID
+	if principal.RuntimeBinding != nil {
+		owner = principal.RuntimeBinding.CreatorID
+	}
+	instance, err := s.config.Store.GetSandbox(ctx, id, owner)
+	if err == nil && principal.RuntimeBinding != nil && instance.SessionId != principal.RuntimeBinding.SessionID {
+		return nil, serviceerrors.NewNotFound("Sandbox or process not found", nil)
+	}
 	return instance, sandboxError(err)
 }
 
@@ -142,7 +152,11 @@ func (s *Service) List(ctx context.Context, request *apiv1.ListSandboxesRequest)
 		}
 		after = string(decoded)
 	}
-	instances, err := s.config.Store.ListSandboxes(ctx, principal.ID, after, limit+1, request.SandboxTemplate)
+	owner, sessionID := principal.ID, ""
+	if principal.RuntimeBinding != nil {
+		owner, sessionID = principal.RuntimeBinding.CreatorID, principal.RuntimeBinding.SessionID
+	}
+	instances, err := s.config.Store.ListSandboxes(ctx, owner, after, limit+1, request.SandboxTemplate, sessionID)
 	if err != nil {
 		return nil, sandboxError(err)
 	}
@@ -155,6 +169,9 @@ func (s *Service) List(ctx context.Context, request *apiv1.ListSandboxesRequest)
 }
 
 func (s *Service) Suspend(ctx context.Context, id string) (*apiv1.Sandbox, error) {
+	if err := rejectActorLifecycle(ctx); err != nil {
+		return nil, err
+	}
 	if _, err := s.authorized(ctx, id, auth.VerbUpdate); err != nil {
 		return nil, err
 	}
@@ -162,6 +179,9 @@ func (s *Service) Suspend(ctx context.Context, id string) (*apiv1.Sandbox, error
 }
 
 func (s *Service) Resume(ctx context.Context, id string) (*apiv1.Sandbox, error) {
+	if err := rejectActorLifecycle(ctx); err != nil {
+		return nil, err
+	}
 	if _, err := s.authorized(ctx, id, auth.VerbUpdate); err != nil {
 		return nil, err
 	}
@@ -169,10 +189,20 @@ func (s *Service) Resume(ctx context.Context, id string) (*apiv1.Sandbox, error)
 }
 
 func (s *Service) Delete(ctx context.Context, id string) (*apiv1.Sandbox, error) {
+	if err := rejectActorLifecycle(ctx); err != nil {
+		return nil, err
+	}
 	if _, err := s.authorized(ctx, id, auth.VerbDelete); err != nil {
 		return nil, err
 	}
 	return s.run(ctx, id, apiv1.RuntimeOperation_RUNTIME_OPERATION_DELETE)
+}
+
+func rejectActorLifecycle(ctx context.Context) error {
+	if session, ok := auth.AuthSessionFrom(ctx); ok && session.Principal().RuntimeBinding != nil {
+		return serviceerrors.NewPermissionDenied("Runtime actors cannot manage sandbox lifecycle", nil)
+	}
+	return nil
 }
 
 func requestHash(request proto.Message) ([]byte, error) {

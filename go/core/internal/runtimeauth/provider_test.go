@@ -77,6 +77,7 @@ func TestSharedHTTPAuthenticationBindsActorsAndPreservesUserMode(t *testing.T) {
 	}{
 		{"insecure", &authimpl.InsecureAuthenticator{}, http.StatusOK},
 		{"proxy", authimpl.NewProxyAuthenticator("sub"), http.StatusUnauthorized},
+		{"machine only", &authimpl.RejectUserAuthenticator{}, http.StatusUnauthorized},
 	} {
 		t.Run(mode.name, func(t *testing.T) {
 			provider := runtimeauth.NewProvider(mode.users, verifier, store, issuer.URL)
