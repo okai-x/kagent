@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -22,6 +22,7 @@ members = [
     "kagent-langgraph",
     "kagent-openai",
     "kagent-proto",
+    "kagent-sdk",
     "kagent-tools",
     "kebab",
     "poem-flow",
@@ -2125,6 +2126,23 @@ requires-dist = [
     { name = "a2a-sdk", specifier = ">=1.1.5,<2" },
     { name = "grpcio", specifier = ">=1.84.1" },
     { name = "protobuf", specifier = ">=6.33.5,<7" },
+]
+
+[[package]]
+name = "kagent-sdk"
+version = "0.1.0"
+source = { editable = "packages/kagent-sdk" }
+dependencies = [
+    { name = "a2a-sdk" },
+    { name = "grpcio" },
+    { name = "kagent-proto" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-sdk", specifier = ">=1.1.5,<2" },
+    { name = "grpcio", specifier = ">=1.84.1" },
+    { name = "kagent-proto", editable = "packages/kagent-proto" },
 ]
 
 [[package]]

@@ -22,10 +22,11 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1akagent/api/v1/common.proto\x12\rkagent.api.v1\x1a\x1cgoogle/protobuf/struct.proto\"v\n\x10StructuredObject\x12\x1f\n\x0b\x61pi_version\x18\x01 \x01(\tR\napiVersion\x12\x12\n\x04kind\x18\x02 \x01(\tR\x04kind\x12-\n\x05value\x18\x03 \x01(\x0b\x32\x17.google.protobuf.StructR\x05valueB=Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1akagent/api/v1/common.proto\x12\rkagent.api.v1\x1a\x1b\x62uf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\"v\n\x10StructuredObject\x12\x1f\n\x0b\x61pi_version\x18\x01 \x01(\tR\napiVersion\x12\x12\n\x04kind\x18\x02 \x01(\tR\x04kind\x12-\n\x05value\x18\x03 \x01(\x0b\x32\x17.google.protobuf.StructR\x05value\"\xc1\x01\n\x11ResourceReference\x12H\n\tnamespace\x18\x01 \x01(\tB*\xbaH\'r%\x10\x01\x18?2\x1f^[a-z0-9]([-a-z0-9]*[a-z0-9])?$R\tnamespace\x12\x62\n\x04name\x18\x02 \x01(\tBN\xbaHKrI\x10\x01\x18\xfd\x01\x32\x42^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$R\x04name\"M\n\x0bPageRequest\x12\x1f\n\x05limit\x18\x01 \x01(\x05\x42\t\xbaH\x06\x1a\x04\x18\x64(\x00R\x05limit\x12\x1d\n\npage_token\x18\x02 \x01(\tR\tpageToken\"6\n\x0cPageResponse\x12&\n\x0fnext_page_token\x18\x01 \x01(\tR\rnextPageTokenB=Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,6 +34,18 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'kagent.api.v1.common_pb2', 
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1'
-  _globals['_STRUCTUREDOBJECT']._serialized_start=75
-  _globals['_STRUCTUREDOBJECT']._serialized_end=193
+  _globals['_RESOURCEREFERENCE'].fields_by_name['namespace']._loaded_options = None
+  _globals['_RESOURCEREFERENCE'].fields_by_name['namespace']._serialized_options = b'\272H\'r%\020\001\030?2\037^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+  _globals['_RESOURCEREFERENCE'].fields_by_name['name']._loaded_options = None
+  _globals['_RESOURCEREFERENCE'].fields_by_name['name']._serialized_options = b'\272HKrI\020\001\030\375\0012B^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+  _globals['_PAGEREQUEST'].fields_by_name['limit']._loaded_options = None
+  _globals['_PAGEREQUEST'].fields_by_name['limit']._serialized_options = b'\272H\006\032\004\030d(\000'
+  _globals['_STRUCTUREDOBJECT']._serialized_start=104
+  _globals['_STRUCTUREDOBJECT']._serialized_end=222
+  _globals['_RESOURCEREFERENCE']._serialized_start=225
+  _globals['_RESOURCEREFERENCE']._serialized_end=418
+  _globals['_PAGEREQUEST']._serialized_start=420
+  _globals['_PAGEREQUEST']._serialized_end=497
+  _globals['_PAGERESPONSE']._serialized_start=499
+  _globals['_PAGERESPONSE']._serialized_end=553
 # @@protoc_insertion_point(module_scope)
