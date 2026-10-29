@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/kagent", "src/buf"]
+packages = ["src/kagent", "src/buf", "src/ateenv"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/a2a_pb2.py" = "a2a_pb2.py"

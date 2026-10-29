@@ -159,6 +159,7 @@ proto-generate: ## Generate Go, TypeScript, and Python protobuf clients and serv
 	cd proto && $(BUF) generate
 	cd proto && $(BUF) generate --template buf.gen.typescript.yaml
 	cd proto && $(BUF) generate --template buf.gen.python-validation.yaml
+	cd proto && $(BUF) generate --template buf.gen.python-guest.yaml
 
 .PHONY: proto-lint
 proto-lint: ## Lint repository-owned protobuf schemas
@@ -173,7 +174,7 @@ proto-breaking: ## Check protobuf compatibility against the target branch (defau
 	fi
 
 PROTO_BREAKING_BRANCH ?= main
-PROTO_GENERATED_PATHS := go/api/gen ui/src/generated python/packages/kagent-proto/src/kagent python/packages/kagent-proto/src/buf
+PROTO_GENERATED_PATHS := go/api/gen ui/src/generated python/packages/kagent-proto/src/kagent python/packages/kagent-proto/src/buf python/packages/kagent-proto/src/ateenv
 
 .PHONY: proto-check
 proto-check: proto-lint proto-generate ## Regenerate protobuf artifacts and fail when committed output drifts
