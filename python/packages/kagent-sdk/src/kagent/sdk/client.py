@@ -156,6 +156,26 @@ class KagentClient:
         finally:
             call.cancel()
 
+    async def read_workspace_files(
+        self, session_id: str, paths: Sequence[str], expected_head_task_id: str
+    ) -> AsyncIterator[sessions_pb2.ReadWorkspaceFilesResponse]:
+        """Collect a bounded batch with one final runtime snapshot, without retries.
+
+        Responses retain request order and include explicit empty/missing files.
+        Discard the entire batch on any stream error; only final OK is complete.
+        """
+        call = self.sessions.ReadWorkspaceFiles(
+            sessions_pb2.ReadWorkspaceFilesRequest(
+                session_id=session_id, paths=paths, expected_head_task_id=expected_head_task_id
+            ),
+            **self.call_options(),
+        )
+        try:
+            async for response in call:
+                yield response
+        finally:
+            call.cancel()
+
     async def stream_message(self, session_id: str, text: str, *, message_id: str) -> AsyncIterator[a2a.StreamResponse]:
         """Send a text-only turn; closing the iterator does not cancel the task."""
         async with aclosing(self.stream_parts(session_id, [a2a.Part(text=text)], message_id=message_id)) as stream:

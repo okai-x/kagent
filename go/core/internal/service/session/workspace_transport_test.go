@@ -117,3 +117,64 @@ func TestWorkspaceAbortedReadCleansUpAndDiscardsPartialFile(t *testing.T) {
 	require.NotContains(t, err.Error(), "private workspace path")
 	require.NoError(t, store.ReserveSessionDispatch(t.Context(), request.SessionId, uuid.New(), "next"), "definite runtime failure must release admission after cleanup")
 }
+
+type failedWorkspaceWriter struct{}
+
+func (failedWorkspaceWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
+
+func TestWorkspaceDialerDoesNotHideSpoolFailureOrPartialMissing(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		remote      codes.Code
+		failedWrite bool
+		definite    bool
+	}{
+		{"spool-failed-then-missing", codes.NotFound, true, true},
+		{"spool-failed-then-eof", codes.OK, true, true},
+		{"spool-failed-then-unknown", codes.Unavailable, true, false},
+		{"bytes-then-missing", codes.NotFound, false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+			server := grpc.NewServer()
+			drained := make(chan struct{})
+			runtimev1.RegisterWorkspaceServiceServer(server, &workspacePrivateRPC{read: func(_ *runtimev1.ReadFileRequest, stream grpc.ServerStreamingServer[runtimev1.ReadFileResponse]) error {
+				for range 2 {
+					if err := stream.Send(&runtimev1.ReadFileResponse{Chunk: []byte("partial")}); err != nil {
+						return err
+					}
+				}
+				close(drained)
+				return status.Error(test.remote, "private terminal result")
+			}})
+			go func() { _ = server.Serve(listener) }()
+			t.Cleanup(server.Stop)
+			dialer, err := NewWorkspaceDialer("http://"+listener.Addr().String(), &authimpl.InsecureAuthenticator{})
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, dialer.Close()) })
+			id := uuid.NewString()
+			work := &database.WorkspaceAccess{Session: &apiv1.Session{Id: id, A2AAuthority: substrate.ActorHost("team-a", substrate.ActorName(id), "")}, GrantID: uuid.New(), Path: "result.glb"}
+			ctx, cancel := context.WithTimeout(auth.AuthSessionTo(t.Context(), serviceTestSession{userID: "alice"}), 5*time.Second)
+			defer cancel()
+			writer := io.Discard
+			if test.failedWrite {
+				writer = failedWorkspaceWriter{}
+			}
+			definite, err := dialer.Read(ctx, work, writer)
+			require.Equal(t, test.definite, definite)
+			require.Error(t, err)
+			require.NotEqual(t, codes.NotFound, status.Code(err), "a local write failure or received bytes is never an optional missing file")
+			if test.failedWrite {
+				require.ErrorIs(t, err, io.ErrClosedPipe)
+			} else {
+				require.Equal(t, codes.DataLoss, status.Code(err))
+			}
+			select {
+			case <-drained:
+			case <-ctx.Done():
+				t.Fatal("private stream was not drained")
+			}
+		})
+	}
+}

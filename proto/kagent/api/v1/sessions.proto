@@ -33,6 +33,36 @@ service SessionService {
   // Reading coordinates with execution and runtime suspension. Success is only
   // established by the final OK status; discard partial bytes on any failure.
   rpc ReadWorkspaceFile(ReadWorkspaceFileRequest) returns (stream ReadWorkspaceFileResponse);
+  // Collects up to four files at the same terminal boundary and suspends once.
+  // All runtime reads and the durable snapshot complete before any response.
+  // Discard the entire batch unless the stream finishes with OK.
+  rpc ReadWorkspaceFiles(ReadWorkspaceFilesRequest) returns (stream ReadWorkspaceFilesResponse);
+}
+
+message ReadWorkspaceFilesRequest {
+  string session_id = 1 [(buf.validate.field).string.uuid = true];
+  repeated string paths = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 4
+    unique: true
+    items: {string: {min_len: 1 max_len: 4096 pattern: "^[^\\x00\\\\]+$"}}
+  }];
+  string expected_head_task_id = 3 [(buf.validate.field).string.min_len = 1];
+  option (buf.validate.message).cel = {
+    id: "workspace.relative_paths"
+    message: "paths must be canonical relative workspace paths"
+    expression: "this.paths.all(p, !p.startsWith('/') && !p.endsWith('/') && !p.contains('//') && !p.matches('(^|/)\\\\.\\\\.?(/|$)'))"
+  };
+}
+
+message ReadWorkspaceFilesResponse {
+  // Files appear in request order, with contiguous chunks for each path.
+  // Every requested path has a response, including empty and missing files.
+  string path = 1;
+  // Each file is bounded to 64 MiB; the batch is bounded to 256 MiB.
+  bytes chunk = 2;
+  // A definite missing regular file has one response with no chunk bytes.
+  bool missing = 3;
 }
 
 message ReadWorkspaceFileRequest {

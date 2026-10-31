@@ -119,6 +119,10 @@ func TestWorkspacePublicAndActorAuthorizationThroughGRPC(t *testing.T) {
 			require.NoError(t, err)
 			_, err = stream.Recv()
 			require.Equal(t, denied.code, status.Code(err))
+			batch, err := client.ReadWorkspaceFiles(denied.ctx, &apiv1.ReadWorkspaceFilesRequest{SessionId: request.SessionId, Paths: []string{request.Path}, ExpectedHeadTaskId: request.ExpectedHeadTaskId})
+			require.NoError(t, err)
+			_, err = batch.Recv()
+			require.Equal(t, denied.code, status.Code(err))
 		})
 	}
 	stream, err := client.ReadWorkspaceFile(owner, request)
@@ -127,6 +131,16 @@ func TestWorkspacePublicAndActorAuthorizationThroughGRPC(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("glb-bytes"), chunk.Chunk)
 	_, err = stream.Recv()
+	require.ErrorIs(t, err, io.EOF)
+	batch, err := client.ReadWorkspaceFiles(owner, &apiv1.ReadWorkspaceFilesRequest{SessionId: request.SessionId, Paths: []string{"result.glb", "result.blend"}, ExpectedHeadTaskId: request.ExpectedHeadTaskId})
+	require.NoError(t, err)
+	for _, path := range []string{"result.glb", "result.blend"} {
+		response, err := batch.Recv()
+		require.NoError(t, err)
+		require.Equal(t, path, response.Path)
+		require.Equal(t, []byte("glb-bytes"), response.Chunk)
+	}
+	_, err = batch.Recv()
 	require.ErrorIs(t, err, io.EOF)
 	require.NoError(t, store.ReserveSessionDispatch(t.Context(), session.Id, uuid.New(), "next"))
 }
@@ -138,6 +152,7 @@ func TestWorkspaceRequestValidationAndPolicies(t *testing.T) {
 	for _, path := range []string{"", "/result.glb", "../secret", "a/../b", ".", "a/.", "a//b", "a/", "a\\b", "a\x00b"} {
 		for _, request := range []proto.Message{
 			&apiv1.ReadWorkspaceFileRequest{SessionId: id, ExpectedHeadTaskId: "task", Path: path},
+			&apiv1.ReadWorkspaceFilesRequest{SessionId: id, ExpectedHeadTaskId: "task", Paths: []string{path}},
 			&runtimev1.ReadFileRequest{GrantId: id, Path: path},
 		} {
 			require.Error(t, validator.Validate(request), "path %q", path)
@@ -146,7 +161,12 @@ func TestWorkspaceRequestValidationAndPolicies(t *testing.T) {
 	require.NoError(t, validator.Validate(&apiv1.ReadWorkspaceFileRequest{SessionId: id, ExpectedHeadTaskId: "task", Path: "output/model.glb"}))
 	require.NoError(t, validator.Validate(&runtimev1.ReadFileRequest{GrantId: id, Path: "output/model.glb"}))
 	require.Error(t, validator.Validate(&runtimev1.AuthorizeReadRequest{GrantId: "bad", Path: "result.glb"}))
+	for _, paths := range [][]string{nil, {"x", "x"}, {"a", "b", "c", "d", "e"}} {
+		require.Error(t, validator.Validate(&apiv1.ReadWorkspaceFilesRequest{SessionId: id, ExpectedHeadTaskId: "task", Paths: paths}))
+	}
+	require.NoError(t, validator.Validate(&apiv1.ReadWorkspaceFilesRequest{SessionId: id, ExpectedHeadTaskId: "task", Paths: []string{"result.glb", "output/model.blend"}}))
 	policies := DefaultMethodPolicies()
+	require.Equal(t, auth.AccessUpdate, policies[apiv1.SessionService_ReadWorkspaceFiles_FullMethodName])
 	require.Equal(t, auth.AccessUpdate, policies[apiv1.SessionService_ReadWorkspaceFile_FullMethodName])
 	require.Equal(t, auth.AccessRuntime, policies[runtimev1.WorkspaceAccessService_AuthorizeRead_FullMethodName])
 	_, public := policies[runtimev1.WorkspaceService_ReadFile_FullMethodName]

@@ -97,7 +97,13 @@ func (d *WorkspaceDialer) Read(ctx context.Context, work *database.WorkspaceAcce
 			return true, localErr
 		}
 		if err != nil {
-			return definiteWorkspaceOutcome(err), errors.Join(localErr, err)
+			if localErr != nil {
+				return definiteWorkspaceOutcome(err), localErr
+			}
+			if status.Code(err) == codes.NotFound && total > 0 {
+				return true, status.Error(codes.DataLoss, "Workspace returned an incomplete file response")
+			}
+			return definiteWorkspaceOutcome(err), err
 		}
 		total += len(chunk.Chunk)
 		if total > maxWorkspaceFileBytes && localErr == nil {

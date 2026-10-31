@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,6 +28,7 @@ type workspaceStore interface {
 	ConsumeWorkspaceGrant(context.Context, string, string, string) (time.Time, error)
 	ReleaseWorkspacePreparation(context.Context, *database.WorkspaceAccess) error
 	CompleteWorkspaceRead(context.Context, *database.WorkspaceAccess) error
+	NextWorkspaceRead(context.Context, *database.WorkspaceAccess, string) (*database.WorkspaceAccess, error)
 	IssueWorkspaceQuiescence(context.Context, *database.WorkspaceAccess, int32) error
 	FinishWorkspaceAccess(context.Context, *database.WorkspaceAccess, *database.SessionTaskSnapshot) error
 	RecoverWorkspacePreparation(context.Context) error
@@ -46,64 +47,27 @@ type WorkspaceService struct {
 	workflow         *ActorWorkflow
 	reader           workspaceReader
 	recoveryInterval time.Duration
+	downloads        *semaphore.Weighted
 }
 
 func NewWorkspaceService(store workspaceStore, sessions *Service, workflow *ActorWorkflow, reader workspaceReader, interval time.Duration) *WorkspaceService {
-	return &WorkspaceService{store: store, sessions: sessions, workflow: workflow, reader: reader, recoveryInterval: interval}
+	return &WorkspaceService{store: store, sessions: sessions, workflow: workflow, reader: reader, recoveryInterval: interval,
+		downloads: semaphore.NewWeighted(4 * maxWorkspaceFileBytes)}
 }
 
 // Read returns bytes only after the definite runtime read, suspension and
 // snapshot record all succeed. Client cancellation does not abandon cleanup.
-func (s *WorkspaceService) Read(ctx context.Context, request *apiv1.ReadWorkspaceFileRequest, send func([]byte) error) (err error) {
-	if !validWorkspacePath(request.Path) || request.ExpectedHeadTaskId == "" {
-		return serviceerrors.NewInvalidArgument("A canonical workspace path and terminal task ID are required", nil)
-	}
-	if err := workspaceCaller(ctx); err != nil {
-		return err
-	}
-	session, err := s.sessions.getAuthorized(ctx, request.SessionId, auth.VerbUpdate)
-	if err != nil {
-		return err
-	}
-	work, err := s.store.BeginWorkspaceAccess(ctx, session.Id, request.ExpectedHeadTaskId, request.Path, database.RuntimeOperationTimeout)
-	if err != nil {
-		return workspaceStoreError(err)
-	}
-	file, err := os.CreateTemp("", "kagent-workspace-*")
-	if err != nil {
-		return s.releasePreparation(ctx, work, err)
-	}
-	defer func() { err = errors.Join(err, file.Close(), os.Remove(file.Name())) }()
-	if _, _, err := s.workflow.prepareQuiescence(ctx, session); err != nil {
-		return s.releasePreparation(ctx, work, err)
-	}
-	if err := s.store.IssueWorkspaceRead(ctx, work); err != nil {
-		return workspaceStoreError(err)
-	}
-	readCtx, cancel := context.WithDeadline(context.WithoutCancel(ctx), work.ExpiresAt)
-	definite, readErr := s.reader.Read(readCtx, work, file)
-	cancel()
-	if !definite {
-		return serviceerrors.NewUnavailable("Workspace read outcome is unresolved; session access remains blocked", readErr)
-	}
-	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), database.RuntimeOperationTimeout)
-	defer cleanupCancel()
-	if err := s.store.CompleteWorkspaceRead(cleanupCtx, work); err != nil {
-		return workspaceStoreError(err)
-	}
-	if err := s.cleanup(cleanupCtx, work); err != nil {
-		return err
-	}
-	if readErr != nil {
-		return workspaceReadError(readErr)
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return serviceerrors.NewInternal("Failed to read collected workspace file", err)
-	}
-	return sendWorkspaceFile(ctx, file, send)
+func (s *WorkspaceService) Read(ctx context.Context, request *apiv1.ReadWorkspaceFileRequest, send func([]byte) error) error {
+	batch := &apiv1.ReadWorkspaceFilesRequest{SessionId: request.SessionId, Paths: []string{request.Path}, ExpectedHeadTaskId: request.ExpectedHeadTaskId}
+	return s.ReadFiles(ctx, batch, func(result *apiv1.ReadWorkspaceFilesResponse) error {
+		if result.Missing {
+			return workspaceReadError(status.Error(codes.NotFound, "missing"))
+		}
+		if len(result.Chunk) == 0 {
+			return nil
+		}
+		return send(result.Chunk)
+	})
 }
 
 func workspaceCaller(ctx context.Context) error {

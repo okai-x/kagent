@@ -136,7 +136,8 @@ func (c *Client) ReleaseWorkspacePreparation(ctx context.Context, work *Workspac
 }
 
 // CompleteWorkspaceRead revokes the private grant after a definite RPC outcome
-// and records resumable cleanup preparation. No further file access is admitted.
+// and records resumable cleanup preparation. A batch can rotate its grant only
+// while this executor still owns the live cleanup lease and read deadline.
 func (c *Client) CompleteWorkspaceRead(ctx context.Context, work *WorkspaceAccess) error {
 	tag, err := c.db.Exec(ctx, `
 		UPDATE session_workspace_access SET phase = 'CLEANUP',
@@ -150,6 +151,28 @@ func (c *Client) CompleteWorkspaceRead(ctx context.Context, work *WorkspaceAcces
 		return ErrConflict
 	}
 	return nil
+}
+
+// NextWorkspaceRead rotates the single-use grant after a definite file read.
+// It preserves the original task boundary and deadline. Expired cleanup leases,
+// replaced Actors and stale executors cannot issue another read. On any error
+// the caller must not use either grant to start runtime work.
+func (c *Client) NextWorkspaceRead(ctx context.Context, work *WorkspaceAccess, path string) (*WorkspaceAccess, error) {
+	next := *work
+	next.GrantID, next.Path = uuid.New(), path
+	tag, err := c.db.Exec(ctx, `
+		UPDATE session_workspace_access a SET grant_id = $3, path = $4, consumed = FALSE, phase = 'READING'
+		WHERE grant_id = $1 AND executor_id = $2 AND phase = 'CLEANUP'
+		    AND lease_expires_at > clock_timestamp() AND expires_at > clock_timestamp()
+		    AND actor_uid = (SELECT actor_uid FROM session WHERE id = a.session_id)
+	`, work.GrantID, work.ExecutorID, next.GrantID, path)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() != 1 {
+		return nil, ErrConflict
+	}
+	return &next, nil
 }
 
 // IssueWorkspaceQuiescence durably authorizes exactly one suspend. A lost

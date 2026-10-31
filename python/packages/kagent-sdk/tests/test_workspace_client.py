@@ -106,3 +106,77 @@ async def test_workspace_structured_file_missing_survives_transport(platform):
     assert actual.details[0].Unpack(info)
     assert info == expected
     assert len(service.requests) == 1
+
+
+class WorkspaceBatch(Workspace):
+    async def ReadWorkspaceFiles(self, request, context):
+        self.requests.append(request)
+        self.metadata.append(dict(context.invocation_metadata()))
+        try:
+            yield sessions_pb2.ReadWorkspaceFilesResponse(path=request.paths[0], chunk=b"first")
+            if self.error:
+                await context.abort(self.error, "workspace batch did not complete", self.error_metadata)
+            if self.wait:
+                await asyncio.Event().wait()
+            yield sessions_pb2.ReadWorkspaceFilesResponse(path=request.paths[0], chunk=b"second")
+            yield sessions_pb2.ReadWorkspaceFilesResponse(path=request.paths[1], missing=True)
+            yield sessions_pb2.ReadWorkspaceFilesResponse(path=request.paths[2])
+        finally:
+            self.closed.set()
+
+
+@pytest_asyncio.fixture
+async def batch_platform():
+    service, server = WorkspaceBatch(), grpc.aio.server()
+    sessions_pb2_grpc.add_SessionServiceServicer_to_server(service, server)
+    port = server.add_insecure_port("127.0.0.1:0")
+    await server.start()
+    try:
+        async with KagentClient(f"http://127.0.0.1:{port}", token="test-credential", timeout=5) as client:
+            yield client, service
+    finally:
+        await server.stop(None)
+
+
+@pytest.mark.asyncio
+async def test_workspace_batch_preserves_paths_markers_and_identity(batch_platform):
+    client, service = batch_platform
+    paths = ["result.glb", "result.blend", "result.png"]
+    messages = [message async for message in client.read_workspace_files("session", paths, "terminal-task")]
+    assert messages == [
+        sessions_pb2.ReadWorkspaceFilesResponse(path=paths[0], chunk=b"first"),
+        sessions_pb2.ReadWorkspaceFilesResponse(path=paths[0], chunk=b"second"),
+        sessions_pb2.ReadWorkspaceFilesResponse(path=paths[1], missing=True),
+        sessions_pb2.ReadWorkspaceFilesResponse(path=paths[2]),
+    ]
+    assert service.requests == [
+        sessions_pb2.ReadWorkspaceFilesRequest(session_id="session", paths=paths, expected_head_task_id="terminal-task")
+    ]
+    assert service.metadata[0]["authorization"] == "Bearer test-credential"
+    assert "kagent-sandbox-id" not in service.metadata[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "code", [grpc.StatusCode.NOT_FOUND, grpc.StatusCode.FAILED_PRECONDITION, grpc.StatusCode.UNAVAILABLE]
+)
+async def test_workspace_batch_partial_failure_preserves_status_without_retry(batch_platform, code):
+    client, service = batch_platform
+    service.error = code
+    received = []
+    with pytest.raises(grpc.aio.AioRpcError) as failure:
+        async for response in client.read_workspace_files("session", ["result.glb"], "terminal-task"):
+            received.append(response)
+    assert received == [sessions_pb2.ReadWorkspaceFilesResponse(path="result.glb", chunk=b"first")]
+    assert failure.value.code() == code
+    assert len(service.requests) == 1
+
+
+@pytest.mark.asyncio
+async def test_closing_workspace_batch_cancels_read(batch_platform):
+    client, service = batch_platform
+    service.wait = True
+    async with aclosing(client.read_workspace_files("session", ["result.glb"], "terminal-task")) as stream:
+        assert (await anext(stream)).chunk == b"first"
+    await asyncio.wait_for(service.closed.wait(), 1)
+    assert len(service.requests) == 1

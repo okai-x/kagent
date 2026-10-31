@@ -29,6 +29,7 @@ const (
 	SessionService_ListSessionShares_FullMethodName    = "/kagent.api.v1.SessionService/ListSessionShares"
 	SessionService_RevokeSessionShare_FullMethodName   = "/kagent.api.v1.SessionService/RevokeSessionShare"
 	SessionService_ReadWorkspaceFile_FullMethodName    = "/kagent.api.v1.SessionService/ReadWorkspaceFile"
+	SessionService_ReadWorkspaceFiles_FullMethodName   = "/kagent.api.v1.SessionService/ReadWorkspaceFiles"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -58,6 +59,10 @@ type SessionServiceClient interface {
 	// Reading coordinates with execution and runtime suspension. Success is only
 	// established by the final OK status; discard partial bytes on any failure.
 	ReadWorkspaceFile(ctx context.Context, in *ReadWorkspaceFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ReadWorkspaceFileResponse], error)
+	// Collects up to four files at the same terminal boundary and suspends once.
+	// All runtime reads and the durable snapshot complete before any response.
+	// Discard the entire batch unless the stream finishes with OK.
+	ReadWorkspaceFiles(ctx context.Context, in *ReadWorkspaceFilesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ReadWorkspaceFilesResponse], error)
 }
 
 type sessionServiceClient struct {
@@ -177,6 +182,25 @@ func (c *sessionServiceClient) ReadWorkspaceFile(ctx context.Context, in *ReadWo
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_ReadWorkspaceFileClient = grpc.ServerStreamingClient[ReadWorkspaceFileResponse]
 
+func (c *sessionServiceClient) ReadWorkspaceFiles(ctx context.Context, in *ReadWorkspaceFilesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ReadWorkspaceFilesResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_ReadWorkspaceFiles_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ReadWorkspaceFilesRequest, ReadWorkspaceFilesResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_ReadWorkspaceFilesClient = grpc.ServerStreamingClient[ReadWorkspaceFilesResponse]
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -204,6 +228,10 @@ type SessionServiceServer interface {
 	// Reading coordinates with execution and runtime suspension. Success is only
 	// established by the final OK status; discard partial bytes on any failure.
 	ReadWorkspaceFile(*ReadWorkspaceFileRequest, grpc.ServerStreamingServer[ReadWorkspaceFileResponse]) error
+	// Collects up to four files at the same terminal boundary and suspends once.
+	// All runtime reads and the durable snapshot complete before any response.
+	// Discard the entire batch unless the stream finishes with OK.
+	ReadWorkspaceFiles(*ReadWorkspaceFilesRequest, grpc.ServerStreamingServer[ReadWorkspaceFilesResponse]) error
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -243,6 +271,9 @@ func (UnimplementedSessionServiceServer) RevokeSessionShare(context.Context, *Re
 }
 func (UnimplementedSessionServiceServer) ReadWorkspaceFile(*ReadWorkspaceFileRequest, grpc.ServerStreamingServer[ReadWorkspaceFileResponse]) error {
 	return status.Error(codes.Unimplemented, "method ReadWorkspaceFile not implemented")
+}
+func (UnimplementedSessionServiceServer) ReadWorkspaceFiles(*ReadWorkspaceFilesRequest, grpc.ServerStreamingServer[ReadWorkspaceFilesResponse]) error {
+	return status.Error(codes.Unimplemented, "method ReadWorkspaceFiles not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -438,6 +469,17 @@ func _SessionService_ReadWorkspaceFile_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_ReadWorkspaceFileServer = grpc.ServerStreamingServer[ReadWorkspaceFileResponse]
 
+func _SessionService_ReadWorkspaceFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReadWorkspaceFilesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionServiceServer).ReadWorkspaceFiles(m, &grpc.GenericServerStream[ReadWorkspaceFilesRequest, ReadWorkspaceFilesResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_ReadWorkspaceFilesServer = grpc.ServerStreamingServer[ReadWorkspaceFilesResponse]
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -486,6 +528,11 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ReadWorkspaceFile",
 			Handler:       _SessionService_ReadWorkspaceFile_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ReadWorkspaceFiles",
+			Handler:       _SessionService_ReadWorkspaceFiles_Handler,
 			ServerStreams: true,
 		},
 	},
