@@ -522,6 +522,10 @@ func (*fakeGateway) GetExtendedAgentCard(context.Context, *a2atype.GetExtendedAg
 
 type fakeSessionStore struct{}
 
+func (*fakeSessionStore) ExportSessionHistory(context.Context, string, *apiv1.ExportSessionHistoryRequest) (*apiv1.ExportSessionHistoryResponse, error) {
+	panic("unexpected history export")
+}
+
 func (*fakeSessionStore) CreateSession(context.Context, *apiv1.Session, string) (*apiv1.Session, bool, error) {
 	return nil, false, database.ErrNotFound
 }

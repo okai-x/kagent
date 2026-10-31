@@ -29,6 +29,10 @@ func (s *sessionServer) GetSession(ctx context.Context, request *apiv1.GetSessio
 	return &apiv1.GetSessionResponse{Session: session}, nil
 }
 
+func (s *sessionServer) ExportSessionHistory(ctx context.Context, request *apiv1.ExportSessionHistoryRequest) (*apiv1.ExportSessionHistoryResponse, error) {
+	return s.service.ExportHistory(ctx, request)
+}
+
 func (s *sessionServer) ListSessions(ctx context.Context, request *apiv1.ListSessionsRequest) (*apiv1.ListSessionsResponse, error) {
 	result, err := s.service.List(ctx, sessionsvc.ListRequest{
 		AllCreators: request.GetAllCreators(),

@@ -18,6 +18,10 @@ option go_package = "github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1
 service SessionService {
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  // Exports immutable native A2A event bytes without rebuilding task projections.
+  // Requires the owner or an authorized control-plane principal; shares and
+  // runtime credentials cannot export history. This does not snapshot runtime files.
+  rpc ExportSessionHistory(ExportSessionHistoryRequest) returns (ExportSessionHistoryResponse);
   rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
   rpc UpdateSessionName(UpdateSessionNameRequest) returns (UpdateSessionNameResponse);
   rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
@@ -106,6 +110,46 @@ message GetSessionRequest {
 
 message GetSessionResponse {
   Session session = 1;
+}
+
+// Persist this boundary before consuming pages. It identifies one immutable
+// history prefix; later appends are excluded even when a page is retried.
+message SessionHistoryCutoff {
+  string history_id = 1 [(buf.validate.field).string.uuid = true];
+  int64 through_sequence = 2 [(buf.validate.field).int64.gte = 0];
+}
+
+message ExportSessionHistoryRequest {
+  string session_id = 1 [(buf.validate.field).string.uuid = true];
+  // Omit only on the first request, which captures the currently committed head.
+  // Resend the returned cutoff to restart or resume the same export.
+  SessionHistoryCutoff cutoff = 2;
+  int64 after_sequence = 3 [(buf.validate.field).int64.gte = 0];
+  // Zero uses 100. Pages stop at approximately 2 MiB, or one larger event up to
+  // 8 MiB including identity metadata. An oversized event fails explicitly.
+  int32 page_size = 4 [(buf.validate.field).int32 = {gte: 0, lte: 100}];
+  option (buf.validate.message).cel = {
+    id: "history.cursor"
+    message: "after_sequence requires a cutoff and cannot exceed it"
+    expression: "has(this.cutoff) ? this.after_sequence <= this.cutoff.through_sequence : this.after_sequence == 0"
+  };
+}
+
+message SessionHistoryEvent {
+  int64 sequence = 1;
+  string task_id = 2;
+  optional string message_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  // Exact stored lf.a2a.v1.StreamResponse protobuf bytes, including unknown fields.
+  bytes data = 5;
+}
+
+message ExportSessionHistoryResponse {
+  SessionHistoryCutoff cutoff = 1;
+  repeated SessionHistoryEvent events = 2;
+  // Last returned sequence, or the requested cursor for an empty page.
+  int64 next_after_sequence = 3;
+  bool has_more = 4;
 }
 
 message ListSessionsRequest {
