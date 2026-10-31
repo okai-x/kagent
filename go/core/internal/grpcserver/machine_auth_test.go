@@ -87,6 +87,6 @@ func TestServiceAccountOnlyNativeGRPC(t *testing.T) {
 	require.NoError(t, err)
 	request := httptest.NewRequest(http.MethodPost, "http://private-runtime", nil)
 	require.NoError(t, provider.UpstreamAuth(request, identity, ""))
-	require.Equal(t, "Bearer "+valid, request.Header.Get("Authorization"))
+	require.NotContains(t, request.Header, "Authorization")
 	require.Equal(t, auth.PrincipalID("kubernetes:cluster-a", "kiln-uid"), request.Header.Get("X-User-Id"))
 }

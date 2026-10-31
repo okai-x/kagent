@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"buf.build/go/protovalidate"
@@ -17,6 +18,7 @@ import (
 	protovalidatemiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
@@ -49,10 +51,12 @@ const (
 )
 
 type Config struct {
-	SandboxService         *sandbox.Service
-	BindAddress            string
-	MaxMessageBytes        int
-	Reflection             bool
+	SandboxService  *sandbox.Service
+	BindAddress     string
+	MaxMessageBytes int
+	Reflection      bool
+	// TLS adds a second listener; BindAddress remains the internal plaintext endpoint.
+	TLSBindAddress         string
 	TLSCertFile            string
 	TLSKeyFile             string
 	Authenticator          auth.AuthProvider
@@ -86,6 +90,7 @@ type Server struct {
 	server       *grpc.Server
 	healthServer *health.Server
 	tlsConfig    *tls.Config
+	tlsListener  net.Listener
 }
 
 func New(config Config) (*Server, error) {
@@ -130,6 +135,12 @@ func New(config Config) (*Server, error) {
 	tlsConfig, err := loadTLSConfig(config.TLSCertFile, config.TLSKeyFile)
 	if err != nil {
 		return nil, err
+	}
+	if (tlsConfig != nil) != (config.TLSBindAddress != "") {
+		return nil, errors.New("TLS bind address, certificate and key must all be configured")
+	}
+	if tlsConfig != nil && config.TLSBindAddress == config.BindAddress {
+		return nil, errors.New("TLS and plaintext listeners must use different bind addresses")
 	}
 
 	grpcServer := grpc.NewServer(serverOptions...)
@@ -185,24 +196,44 @@ func (s *Server) Start(ctx context.Context) error {
 			return fmt.Errorf("listen for gRPC on %s: %w", s.config.BindAddress, err)
 		}
 	}
+	defer func() { _ = listener.Close() }()
+	if s.tlsConfig != nil && s.tlsListener == nil {
+		var err error
+		s.tlsListener, err = net.Listen("tcp", s.config.TLSBindAddress)
+		if err != nil {
+			return fmt.Errorf("listen for HTTPS on %s: %w", s.config.TLSBindAddress, err)
+		}
+	}
+	if s.tlsListener != nil {
+		defer func() { _ = s.tlsListener.Close() }()
+	}
+	defer s.server.Stop()
+	s.healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	group, groupContext := errgroup.WithContext(ctx)
+	group.Go(func() error { return s.serveHTTP(groupContext, listener, nil) })
+	if s.tlsListener != nil {
+		group.Go(func() error { return s.serveHTTP(groupContext, s.tlsListener, s.tlsConfig) })
+	}
+	return group.Wait()
+}
 
+func (s *Server) serveHTTP(ctx context.Context, listener net.Listener, tlsConfig *tls.Config) error {
 	logger := logging.FromContext(ctx).With("component", "api_server")
 	logger.InfoContext(ctx, "starting API server", "address", listener.Addr().String())
-	s.healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	protocols := new(http.Protocols)
 	protocols.SetHTTP1(true)
-	if s.tlsConfig == nil {
+	if tlsConfig == nil {
 		protocols.SetUnencryptedHTTP2(true)
 	} else {
 		protocols.SetHTTP2(true)
 	}
 	httpServer := &http.Server{
 		Handler:   s.HandlerOr(s.config.HTTPHandler),
-		TLSConfig: s.tlsConfig,
+		TLSConfig: tlsConfig,
 		Protocols: protocols,
 	}
-	if s.tlsConfig != nil {
-		listener = tls.NewListener(listener, s.tlsConfig)
+	if tlsConfig != nil {
+		listener = tls.NewListener(listener, tlsConfig)
 	}
 
 	serveErr := make(chan error, 1)
@@ -224,7 +255,6 @@ func (s *Server) Start(ctx context.Context) error {
 		if err := httpServer.Shutdown(shutdownContext); err != nil {
 			_ = httpServer.Close()
 		}
-		s.server.Stop()
 		if err := <-serveErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("serve API during shutdown: %w", err)
 		}
@@ -239,12 +269,30 @@ func loadTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 	if certFile == "" || keyFile == "" {
 		return nil, errors.New("both gRPC TLS certificate and key files must be configured")
 	}
-	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
+	if _, err := loadServingCertificate(certFile, keyFile); err != nil {
 		return nil, fmt.Errorf("load gRPC TLS key pair: %w", err)
 	}
 	return &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		MinVersion:   tls.VersionTLS12,
+		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			certificate, err := loadServingCertificate(certFile, keyFile)
+			if err != nil {
+				return nil, fmt.Errorf("reload gRPC TLS key pair: %w", err)
+			}
+			return &certificate, nil
+		},
+		MinVersion: tls.VersionTLS12,
+		NextProtos: []string{"h2", "http/1.1"},
 	}, nil
+}
+
+func loadServingCertificate(certFile, keyFile string) (tls.Certificate, error) {
+	if certFile != keyFile {
+		return tls.LoadX509KeyPair(certFile, keyFile)
+	}
+	// Read projected bundles once so rotation cannot mix certificate generations.
+	bundle, err := os.ReadFile(certFile)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	return tls.X509KeyPair(bundle, bundle)
 }

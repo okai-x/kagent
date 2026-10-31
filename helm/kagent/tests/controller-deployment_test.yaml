@@ -76,6 +76,24 @@ tests:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 8083
 
+  - it: should expose optional HTTPS while retaining plaintext health probes
+    template: controller-deployment.yaml
+    set:
+      config.server.tls:
+        bindAddress: ":8444"
+        certFile: /run/serving.pem
+        keyFile: /run/serving.pem
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[1]
+          value:
+            name: https
+            containerPort: 8444
+            protocol: TCP
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: http
+
   - it: should set global annotations on deployment
     template: controller-deployment.yaml
     set:

@@ -145,9 +145,24 @@ message KubernetesConfig {
 }
 
 message ControllerServerConfig {
+  option (buf.validate.message).cel = {
+    id: "server.distinct_tls_address"
+    message: "TLS and plaintext listeners must use different bind addresses"
+    expression: "!has(this.tls) || this.tls.bind_address != this.bind_address"
+  };
   optional string bind_address = 1 [(buf.validate.field).string.min_len = 1];
   bool grpc_reflection = 2;
   AuthenticationConfig auth = 3;
+  // Optional additional HTTPS/gRPC listener; the existing listener stays plaintext.
+  ControllerTLSConfig tls = 4;
+}
+
+message ControllerTLSConfig {
+  string bind_address = 1 [(buf.validate.field).string.min_len = 1];
+  // Both paths may name one Kubernetes projected credential bundle. Files are
+  // reloaded at each handshake so serving certificates can rotate in place.
+  string cert_file = 2 [(buf.validate.field).string.min_len = 1];
+  string key_file = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 message AuthenticationConfig {

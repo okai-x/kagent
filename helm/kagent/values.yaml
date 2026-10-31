@@ -163,6 +163,14 @@ config:
       # serviceAccount:
       #   authority: kubernetes
     grpcReflection: false
+    # Optional additional HTTPS/gRPC listener; internal Actor callbacks and
+    # health probes keep using the existing plaintext port. Mount certificate
+    # files through controller.volumes and controller.volumeMounts. Both paths
+    # may reference one projected PodCertificate bundle; rotation is automatic.
+    # tls:
+    #   bindAddress: ":8444"
+    #   certFile: /run/kagent-serving/credential-bundle.pem
+    #   keyFile: /run/kagent-serving/credential-bundle.pem
   database:
     # Role each login assumes after connecting. Set distinct roles for each install sharing a database.
     # The owner applies migrations and is not used when skipMigrations is true.

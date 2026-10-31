@@ -19,5 +19,11 @@ func (*RejectUserAuthenticator) Authenticate(context.Context, http.Header, url.V
 }
 
 func (*RejectUserAuthenticator) UpstreamAuth(request *http.Request, session auth.Session, _ string) error {
-	return auth.ForwardCredential(request, session)
+	// Product credentials authorize the control plane, never the Actor workload.
+	request.Header.Del("Authorization")
+	request.Header.Del("X-User-Id")
+	if session != nil {
+		request.Header.Set("X-User-Id", session.Principal().ID)
+	}
+	return nil
 }

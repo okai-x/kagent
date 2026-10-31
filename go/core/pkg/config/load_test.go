@@ -16,6 +16,12 @@ func TestControllerConfig(t *testing.T) {
 		invalid     bool
 	}{
 		{"defaults", "{}", false},
+		{"TLS listener", "server: {tls: {bindAddress: ':8444', certFile: serving.pem, keyFile: serving.pem}}", false},
+		{"TLS missing address", "server: {tls: {certFile: serving.pem, keyFile: serving.pem}}", true},
+		{"TLS missing certificate", "server: {tls: {bindAddress: ':8444', keyFile: serving.pem}}", true},
+		{"TLS missing key", "server: {tls: {bindAddress: ':8444', certFile: serving.pem}}", true},
+		{"TLS empty", "server: {tls: {}}", true},
+		{"TLS shares plaintext address", "server: {bindAddress: ':8083', tls: {bindAddress: ':8083', certFile: serving.pem, keyFile: serving.pem}}", true},
 		{"machine only", "server: {auth: {mode: service-account, serviceAccount: {authority: cluster-a}}}", false},
 		{"machine only missing verifier", "server: {auth: {mode: service-account}}", true},
 		{"machine only missing authority", "server: {auth: {mode: service-account, serviceAccount: {}}}", true},
@@ -81,6 +87,16 @@ func TestControllerConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestControllerTLSPaths(t *testing.T) {
+	cfg := &configv1.ControllerConfig{Server: &configv1.ControllerServerConfig{
+		Tls: &configv1.ControllerTLSConfig{BindAddress: ":8444", CertFile: "serving.pem", KeyFile: "/run/serving.pem"},
+	}}
+	config.DefaultController(cfg)
+	config.ResolveControllerPaths(cfg, "/etc/kagent/controller.yaml")
+	require.Equal(t, "/etc/kagent/serving.pem", cfg.Server.Tls.CertFile)
+	require.Equal(t, "/run/serving.pem", cfg.Server.Tls.KeyFile)
 }
 
 func TestDatabaseSkipMigrations(t *testing.T) {
