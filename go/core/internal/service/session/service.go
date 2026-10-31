@@ -29,6 +29,7 @@ type store interface {
 	CreateSession(context.Context, *apiv1.Session, string) (*apiv1.Session, bool, error)
 	GetSession(context.Context, string, string) (*apiv1.Session, error)
 	GetSessionByID(context.Context, string) (*apiv1.Session, error)
+	ExportSessionHistory(context.Context, string, *apiv1.ExportSessionHistoryRequest) (*apiv1.ExportSessionHistoryResponse, error)
 	ListSessions(context.Context, database.SessionQuery) ([]*apiv1.Session, error)
 	UpdateSessionName(context.Context, string, string, string) (*apiv1.Session, error)
 	CreateSessionShare(context.Context, *apiv1.SessionShare, []byte, string) (*apiv1.SessionShare, error)

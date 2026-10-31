@@ -82,6 +82,30 @@ does not invent a message-ID lookup or retry the mutation. Reconcile with the
 platform before another send; retaining a message ID alone does not guarantee
 server-side deduplication of continuation messages.
 
+## Export native Session history
+
+```python
+page = await client.export_session_history(session_id, page_size=100)
+save_cutoff(page.cutoff)  # Persist before publishing this page's events.
+while True:
+    save_native_events(page.events)  # Preserve event.data bytes without decoding/re-encoding.
+    if not page.has_more:
+        break
+    page = await client.export_session_history(session_id, cutoff=page.cutoff, after_sequence=page.next_after_sequence)
+```
+
+The caller implements durable `save_cutoff` and `save_native_events`. Reuse the
+saved cutoff with cursor zero to restart the same history prefix; later appends
+are excluded. Calls preserve gRPC status and never automatically retry. Pages
+target 2 MiB and may contain one event up to 8 MiB including identity metadata.
+An oversized event fails with `RESOURCE_EXHAUSTED`, without truncation or omission.
+
+Only the owner or authorized control-plane callers can export; shares and runtime
+Actors cannot. This copies stored event bytes, including unknown protobuf fields,
+not original model HTTP traffic or private runtime state. The cutoff does not
+retain a deleted Session or prove task completion. Archive before source deletion
+and keep schema/version information with the exported bytes.
+
 ## Read a Session Actor workspace
 
 A Harness can run CPU Blender beside the agent runtime in the same Actor. The

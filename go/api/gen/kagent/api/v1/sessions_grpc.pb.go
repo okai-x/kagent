@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_CreateSession_FullMethodName      = "/kagent.api.v1.SessionService/CreateSession"
-	SessionService_GetSession_FullMethodName         = "/kagent.api.v1.SessionService/GetSession"
-	SessionService_ListSessions_FullMethodName       = "/kagent.api.v1.SessionService/ListSessions"
-	SessionService_UpdateSessionName_FullMethodName  = "/kagent.api.v1.SessionService/UpdateSessionName"
-	SessionService_DeleteSession_FullMethodName      = "/kagent.api.v1.SessionService/DeleteSession"
-	SessionService_CreateSessionShare_FullMethodName = "/kagent.api.v1.SessionService/CreateSessionShare"
-	SessionService_ListSessionShares_FullMethodName  = "/kagent.api.v1.SessionService/ListSessionShares"
-	SessionService_RevokeSessionShare_FullMethodName = "/kagent.api.v1.SessionService/RevokeSessionShare"
-	SessionService_ReadWorkspaceFile_FullMethodName  = "/kagent.api.v1.SessionService/ReadWorkspaceFile"
+	SessionService_CreateSession_FullMethodName        = "/kagent.api.v1.SessionService/CreateSession"
+	SessionService_GetSession_FullMethodName           = "/kagent.api.v1.SessionService/GetSession"
+	SessionService_ExportSessionHistory_FullMethodName = "/kagent.api.v1.SessionService/ExportSessionHistory"
+	SessionService_ListSessions_FullMethodName         = "/kagent.api.v1.SessionService/ListSessions"
+	SessionService_UpdateSessionName_FullMethodName    = "/kagent.api.v1.SessionService/UpdateSessionName"
+	SessionService_DeleteSession_FullMethodName        = "/kagent.api.v1.SessionService/DeleteSession"
+	SessionService_CreateSessionShare_FullMethodName   = "/kagent.api.v1.SessionService/CreateSessionShare"
+	SessionService_ListSessionShares_FullMethodName    = "/kagent.api.v1.SessionService/ListSessionShares"
+	SessionService_RevokeSessionShare_FullMethodName   = "/kagent.api.v1.SessionService/RevokeSessionShare"
+	SessionService_ReadWorkspaceFile_FullMethodName    = "/kagent.api.v1.SessionService/ReadWorkspaceFile"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -42,6 +43,10 @@ const (
 type SessionServiceClient interface {
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
 	GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error)
+	// Exports immutable native A2A event bytes without rebuilding task projections.
+	// Requires the owner or an authorized control-plane principal; shares and
+	// runtime credentials cannot export history. This does not snapshot runtime files.
+	ExportSessionHistory(ctx context.Context, in *ExportSessionHistoryRequest, opts ...grpc.CallOption) (*ExportSessionHistoryResponse, error)
 	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
 	UpdateSessionName(ctx context.Context, in *UpdateSessionNameRequest, opts ...grpc.CallOption) (*UpdateSessionNameResponse, error)
 	DeleteSession(ctx context.Context, in *DeleteSessionRequest, opts ...grpc.CallOption) (*DeleteSessionResponse, error)
@@ -77,6 +82,16 @@ func (c *sessionServiceClient) GetSession(ctx context.Context, in *GetSessionReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSessionResponse)
 	err := c.cc.Invoke(ctx, SessionService_GetSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) ExportSessionHistory(ctx context.Context, in *ExportSessionHistoryRequest, opts ...grpc.CallOption) (*ExportSessionHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportSessionHistoryResponse)
+	err := c.cc.Invoke(ctx, SessionService_ExportSessionHistory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +189,10 @@ type SessionService_ReadWorkspaceFileClient = grpc.ServerStreamingClient[ReadWor
 type SessionServiceServer interface {
 	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
 	GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error)
+	// Exports immutable native A2A event bytes without rebuilding task projections.
+	// Requires the owner or an authorized control-plane principal; shares and
+	// runtime credentials cannot export history. This does not snapshot runtime files.
+	ExportSessionHistory(context.Context, *ExportSessionHistoryRequest) (*ExportSessionHistoryResponse, error)
 	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
 	UpdateSessionName(context.Context, *UpdateSessionNameRequest) (*UpdateSessionNameResponse, error)
 	DeleteSession(context.Context, *DeleteSessionRequest) (*DeleteSessionResponse, error)
@@ -200,6 +219,9 @@ func (UnimplementedSessionServiceServer) CreateSession(context.Context, *CreateS
 }
 func (UnimplementedSessionServiceServer) GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSession not implemented")
+}
+func (UnimplementedSessionServiceServer) ExportSessionHistory(context.Context, *ExportSessionHistoryRequest) (*ExportSessionHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExportSessionHistory not implemented")
 }
 func (UnimplementedSessionServiceServer) ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListSessions not implemented")
@@ -275,6 +297,24 @@ func _SessionService_GetSession_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).GetSession(ctx, req.(*GetSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_ExportSessionHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportSessionHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).ExportSessionHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_ExportSessionHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).ExportSessionHistory(ctx, req.(*ExportSessionHistoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -412,6 +452,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSession",
 			Handler:    _SessionService_GetSession_Handler,
+		},
+		{
+			MethodName: "ExportSessionHistory",
+			Handler:    _SessionService_ExportSessionHistory_Handler,
 		},
 		{
 			MethodName: "ListSessions",

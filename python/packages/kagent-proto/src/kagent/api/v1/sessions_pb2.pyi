@@ -93,6 +93,52 @@ class GetSessionResponse(_message.Message):
     session: Session
     def __init__(self, session: _Optional[_Union[Session, _Mapping]] = ...) -> None: ...
 
+class SessionHistoryCutoff(_message.Message):
+    __slots__ = ("history_id", "through_sequence")
+    HISTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    THROUGH_SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    history_id: str
+    through_sequence: int
+    def __init__(self, history_id: _Optional[str] = ..., through_sequence: _Optional[int] = ...) -> None: ...
+
+class ExportSessionHistoryRequest(_message.Message):
+    __slots__ = ("session_id", "cutoff", "after_sequence", "page_size")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    CUTOFF_FIELD_NUMBER: _ClassVar[int]
+    AFTER_SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    cutoff: SessionHistoryCutoff
+    after_sequence: int
+    page_size: int
+    def __init__(self, session_id: _Optional[str] = ..., cutoff: _Optional[_Union[SessionHistoryCutoff, _Mapping]] = ..., after_sequence: _Optional[int] = ..., page_size: _Optional[int] = ...) -> None: ...
+
+class SessionHistoryEvent(_message.Message):
+    __slots__ = ("sequence", "task_id", "message_id", "created_at", "data")
+    SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    TASK_ID_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    sequence: int
+    task_id: str
+    message_id: str
+    created_at: _timestamp_pb2.Timestamp
+    data: bytes
+    def __init__(self, sequence: _Optional[int] = ..., task_id: _Optional[str] = ..., message_id: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., data: _Optional[bytes] = ...) -> None: ...
+
+class ExportSessionHistoryResponse(_message.Message):
+    __slots__ = ("cutoff", "events", "next_after_sequence", "has_more")
+    CUTOFF_FIELD_NUMBER: _ClassVar[int]
+    EVENTS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_AFTER_SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    HAS_MORE_FIELD_NUMBER: _ClassVar[int]
+    cutoff: SessionHistoryCutoff
+    events: _containers.RepeatedCompositeFieldContainer[SessionHistoryEvent]
+    next_after_sequence: int
+    has_more: bool
+    def __init__(self, cutoff: _Optional[_Union[SessionHistoryCutoff, _Mapping]] = ..., events: _Optional[_Iterable[_Union[SessionHistoryEvent, _Mapping]]] = ..., next_after_sequence: _Optional[int] = ..., has_more: _Optional[bool] = ...) -> None: ...
+
 class ListSessionsRequest(_message.Message):
     __slots__ = ("all_creators", "page", "agent")
     ALL_CREATORS_FIELD_NUMBER: _ClassVar[int]

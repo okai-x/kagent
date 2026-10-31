@@ -29,6 +29,11 @@ class SessionServiceStub:
                 request_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionRequest.SerializeToString,
                 response_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionResponse.FromString,
                 _registered_method=True)
+        self.ExportSessionHistory = channel.unary_unary(
+                '/kagent.api.v1.SessionService/ExportSessionHistory',
+                request_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryRequest.SerializeToString,
+                response_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryResponse.FromString,
+                _registered_method=True)
         self.ListSessions = channel.unary_unary(
                 '/kagent.api.v1.SessionService/ListSessions',
                 request_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ListSessionsRequest.SerializeToString,
@@ -82,6 +87,15 @@ class SessionServiceServicer:
 
     def GetSession(self, request, context):
         """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExportSessionHistory(self, request, context):
+        """Exports immutable native A2A event bytes without rebuilding task projections.
+        Requires the owner or an authorized control-plane principal; shares and
+        runtime credentials cannot export history. This does not snapshot runtime files.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -144,6 +158,11 @@ def add_SessionServiceServicer_to_server(servicer, server):
                     servicer.GetSession,
                     request_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionRequest.FromString,
                     response_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionResponse.SerializeToString,
+            ),
+            'ExportSessionHistory': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExportSessionHistory,
+                    request_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryRequest.FromString,
+                    response_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryResponse.SerializeToString,
             ),
             'ListSessions': grpc.unary_unary_rpc_method_handler(
                     servicer.ListSessions,
@@ -240,6 +259,33 @@ class SessionService:
             '/kagent.api.v1.SessionService/GetSession',
             kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionRequest.SerializeToString,
             kagent_dot_api_dot_v1_dot_sessions__pb2.GetSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExportSessionHistory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/kagent.api.v1.SessionService/ExportSessionHistory',
+            kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryRequest.SerializeToString,
+            kagent_dot_api_dot_v1_dot_sessions__pb2.ExportSessionHistoryResponse.FromString,
             options,
             channel_credentials,
             insecure,

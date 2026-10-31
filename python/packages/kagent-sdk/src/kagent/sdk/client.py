@@ -115,6 +115,28 @@ class KagentClient:
             await self.sessions.GetSession(sessions_pb2.GetSessionRequest(session_id=session_id), **self.call_options())
         ).session
 
+    async def export_session_history(
+        self,
+        session_id: str,
+        *,
+        cutoff: sessions_pb2.SessionHistoryCutoff | None = None,
+        after_sequence: int = 0,
+        page_size: int = 100,
+    ) -> sessions_pb2.ExportSessionHistoryResponse:
+        """Read one bounded page of exact native event bytes without retrying.
+
+        Persist the first response's cutoff before processing its events. Reuse
+        it with next_after_sequence while has_more is true, or with zero to
+        restart the same prefix. Later appends are excluded. An oversized event
+        fails explicitly; this export does not contain runtime workspace files.
+        """
+        return await self.sessions.ExportSessionHistory(
+            sessions_pb2.ExportSessionHistoryRequest(
+                session_id=session_id, cutoff=cutoff, after_sequence=after_sequence, page_size=page_size
+            ),
+            **self.call_options(),
+        )
+
     async def read_workspace_file(self, session_id: str, path: str, expected_head_task_id: str) -> AsyncIterator[bytes]:
         """Read one file at a settled terminal head; only successful EOF is complete.
 

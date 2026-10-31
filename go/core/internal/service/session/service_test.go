@@ -60,6 +60,10 @@ type serviceTestStore struct {
 	shareErr       error
 }
 
+func (*serviceTestStore) ExportSessionHistory(context.Context, string, *apiv1.ExportSessionHistoryRequest) (*apiv1.ExportSessionHistoryResponse, error) {
+	panic("unexpected history export")
+}
+
 func (s *serviceTestStore) CreateSession(_ context.Context, session *apiv1.Session, requestID string) (*apiv1.Session, bool, error) {
 	s.createInput = session
 	s.requestID = requestID

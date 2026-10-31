@@ -4,7 +4,7 @@
 
 `Session` is a stable conversation identity. Its replaceable Substrate Actor
 provides compute; PostgreSQL owns public task history. `Session.id` equals
-its public A2A context ID. The private `history_id` selects durable history and a
+its public A2A context ID. The internal `history_id` selects durable history and a
 composite foreign key ensures the context binding agrees with `a2a_context`.
 Forks receive new session, context, and history IDs.
 
@@ -48,6 +48,50 @@ flowchart TD
     FORK --> NEWCTX[new history and public context]
     EVENT -->|copy through checkpoint cutoff| NEWCTX
 ```
+
+## Native history export
+
+`SessionService.ExportSessionHistory` is a read-only archival surface over native
+`lf.a2a.v1.StreamResponse` bytes. It does not rebuild A2A task projections, invoke
+an Actor, settle execution, or export private runtime files. Only the Session
+owner or an explicitly authorized control-plane principal may call it. Session
+shares and Actor credentials are rejected even when they may read A2A tasks.
+
+The first request omits `cutoff` and uses `after_sequence = 0`. Its response
+includes an opaque history identity and the currently committed maximum event
+sequence. Persist this `SessionHistoryCutoff` before consuming the page. Every
+subsequent request sends the same cutoff and the prior `next_after_sequence` until
+`has_more` is false. Restarting with that cutoff and cursor zero rereads the same
+prefix; an empty captured history remains empty after later appends. Sequence
+values are ordered, not necessarily contiguous. A cutoff is not a retention
+lease: deletion makes further reads fail, and consumers must persist exports
+before deleting source Sessions.
+
+Each record carries its immutable sequence, task ID, optional message ID, creation
+timestamp, and exact stored protobuf bytes, including unknown fields. Dynamic
+publication/quiescence state, snapshot URIs, and runtime credentials are not
+export metadata. A captured prefix may contain committed events that have not
+yet been published to A2A subscribers; successful export does not prove execution
+or native cleanup completed. Consumers record their own task-completion evidence
+separately. Raw payloads remain owner-scoped, including user and tool content.
+This guarantees preservation of bytes already stored in PostgreSQL, not every
+original runtime RPC field: the existing TaskStore wire-to-domain conversion can
+discard protobuf fields it does not understand before persistence.
+
+Pages use keyset queries on `(history_id, sequence)` with at most 100 events. A
+short read-only repeatable-read transaction first reads bounded size metadata,
+then fetches only the selected payloads. It holds no row locks or transaction
+across an external network call. Pages target 2 MiB including identity metadata;
+one larger event may occupy a page alone up to 8 MiB. Oversized events return
+`RESOURCE_EXHAUSTED` rather than skipping or truncating data. Session writers
+serialize before allocating event sequences, so a future commit cannot appear
+below the captured committed head. Missing sources, mismatched history identities,
+and unavailable cutoffs fail explicitly rather than starting a newer export.
+
+The async Python SDK exposes one page per `export_session_history` call. It
+returns native generated messages and does not retry automatically. Consumers
+must retain source schema/version information along with these bytes for later
+decoding; the export is an audit archive, not a native runtime restore format.
 
 ## Checkpoint creation
 

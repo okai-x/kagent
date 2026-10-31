@@ -70,6 +70,7 @@ func DefaultMethodPolicies() MethodPolicies {
 	}
 	policies[apiv1.SessionService_CreateSession_FullMethodName] = auth.AccessCreate
 	policies[apiv1.SessionService_GetSession_FullMethodName] = auth.AccessRead
+	policies[apiv1.SessionService_ExportSessionHistory_FullMethodName] = auth.AccessRead
 	policies[apiv1.SessionService_ReadWorkspaceFile_FullMethodName] = auth.AccessUpdate
 	policies[apiv1.SessionService_ListSessions_FullMethodName] = auth.AccessRead
 	// A rename is the only write on this service that is not a lifecycle
