@@ -91,9 +91,7 @@ while True:
     save_native_events(page.events)  # Preserve event.data bytes without decoding/re-encoding.
     if not page.has_more:
         break
-    page = await client.export_session_history(
-        session_id, cutoff=page.cutoff, after_sequence=page.next_after_sequence
-    )
+    page = await client.export_session_history(session_id, cutoff=page.cutoff, after_sequence=page.next_after_sequence)
 ```
 
 The caller implements durable `save_cutoff` and `save_native_events`. Reuse the
