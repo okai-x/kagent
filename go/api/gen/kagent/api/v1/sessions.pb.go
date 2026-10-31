@@ -24,6 +24,130 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ReadWorkspaceFilesRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	SessionId          string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Paths              []string               `protobuf:"bytes,2,rep,name=paths,proto3" json:"paths,omitempty"`
+	ExpectedHeadTaskId string                 `protobuf:"bytes,3,opt,name=expected_head_task_id,json=expectedHeadTaskId,proto3" json:"expected_head_task_id,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ReadWorkspaceFilesRequest) Reset() {
+	*x = ReadWorkspaceFilesRequest{}
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadWorkspaceFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadWorkspaceFilesRequest) ProtoMessage() {}
+
+func (x *ReadWorkspaceFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadWorkspaceFilesRequest.ProtoReflect.Descriptor instead.
+func (*ReadWorkspaceFilesRequest) Descriptor() ([]byte, []int) {
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ReadWorkspaceFilesRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *ReadWorkspaceFilesRequest) GetPaths() []string {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+func (x *ReadWorkspaceFilesRequest) GetExpectedHeadTaskId() string {
+	if x != nil {
+		return x.ExpectedHeadTaskId
+	}
+	return ""
+}
+
+type ReadWorkspaceFilesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Files appear in request order, with contiguous chunks for each path.
+	// Every requested path has a response, including empty and missing files.
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// Each file is bounded to 64 MiB; the batch is bounded to 256 MiB.
+	Chunk []byte `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	// A definite missing regular file has one response with no chunk bytes.
+	Missing       bool `protobuf:"varint,3,opt,name=missing,proto3" json:"missing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadWorkspaceFilesResponse) Reset() {
+	*x = ReadWorkspaceFilesResponse{}
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadWorkspaceFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadWorkspaceFilesResponse) ProtoMessage() {}
+
+func (x *ReadWorkspaceFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadWorkspaceFilesResponse.ProtoReflect.Descriptor instead.
+func (*ReadWorkspaceFilesResponse) Descriptor() ([]byte, []int) {
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ReadWorkspaceFilesResponse) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *ReadWorkspaceFilesResponse) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *ReadWorkspaceFilesResponse) GetMissing() bool {
+	if x != nil {
+		return x.Missing
+	}
+	return false
+}
+
 type ReadWorkspaceFileRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -37,7 +161,7 @@ type ReadWorkspaceFileRequest struct {
 
 func (x *ReadWorkspaceFileRequest) Reset() {
 	*x = ReadWorkspaceFileRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[0]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +173,7 @@ func (x *ReadWorkspaceFileRequest) String() string {
 func (*ReadWorkspaceFileRequest) ProtoMessage() {}
 
 func (x *ReadWorkspaceFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[0]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +186,7 @@ func (x *ReadWorkspaceFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadWorkspaceFileRequest.ProtoReflect.Descriptor instead.
 func (*ReadWorkspaceFileRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{0}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ReadWorkspaceFileRequest) GetSessionId() string {
@@ -96,7 +220,7 @@ type ReadWorkspaceFileResponse struct {
 
 func (x *ReadWorkspaceFileResponse) Reset() {
 	*x = ReadWorkspaceFileResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[1]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -108,7 +232,7 @@ func (x *ReadWorkspaceFileResponse) String() string {
 func (*ReadWorkspaceFileResponse) ProtoMessage() {}
 
 func (x *ReadWorkspaceFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[1]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +245,7 @@ func (x *ReadWorkspaceFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadWorkspaceFileResponse.ProtoReflect.Descriptor instead.
 func (*ReadWorkspaceFileResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{1}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ReadWorkspaceFileResponse) GetChunk() []byte {
@@ -141,7 +265,7 @@ type Failure struct {
 
 func (x *Failure) Reset() {
 	*x = Failure{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[2]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +277,7 @@ func (x *Failure) String() string {
 func (*Failure) ProtoMessage() {}
 
 func (x *Failure) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[2]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +290,7 @@ func (x *Failure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Failure.ProtoReflect.Descriptor instead.
 func (*Failure) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{2}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Failure) GetReason() string {
@@ -207,7 +331,7 @@ type Session struct {
 
 func (x *Session) Reset() {
 	*x = Session{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[3]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -219,7 +343,7 @@ func (x *Session) String() string {
 func (*Session) ProtoMessage() {}
 
 func (x *Session) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[3]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -232,7 +356,7 @@ func (x *Session) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Session.ProtoReflect.Descriptor instead.
 func (*Session) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{3}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Session) GetId() string {
@@ -331,7 +455,7 @@ type CreateSessionRequest struct {
 
 func (x *CreateSessionRequest) Reset() {
 	*x = CreateSessionRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[4]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +467,7 @@ func (x *CreateSessionRequest) String() string {
 func (*CreateSessionRequest) ProtoMessage() {}
 
 func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[4]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +480,7 @@ func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateSessionRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{4}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateSessionRequest) GetAgent() *ResourceReference {
@@ -389,7 +513,7 @@ type CreateSessionResponse struct {
 
 func (x *CreateSessionResponse) Reset() {
 	*x = CreateSessionResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[5]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +525,7 @@ func (x *CreateSessionResponse) String() string {
 func (*CreateSessionResponse) ProtoMessage() {}
 
 func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[5]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +538,7 @@ func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateSessionResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{5}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateSessionResponse) GetSession() *Session {
@@ -433,7 +557,7 @@ type GetSessionRequest struct {
 
 func (x *GetSessionRequest) Reset() {
 	*x = GetSessionRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[6]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +569,7 @@ func (x *GetSessionRequest) String() string {
 func (*GetSessionRequest) ProtoMessage() {}
 
 func (x *GetSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[6]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +582,7 @@ func (x *GetSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionRequest.ProtoReflect.Descriptor instead.
 func (*GetSessionRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{6}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetSessionRequest) GetSessionId() string {
@@ -477,7 +601,7 @@ type GetSessionResponse struct {
 
 func (x *GetSessionResponse) Reset() {
 	*x = GetSessionResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[7]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -489,7 +613,7 @@ func (x *GetSessionResponse) String() string {
 func (*GetSessionResponse) ProtoMessage() {}
 
 func (x *GetSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[7]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -502,7 +626,7 @@ func (x *GetSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionResponse.ProtoReflect.Descriptor instead.
 func (*GetSessionResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{7}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetSessionResponse) GetSession() *Session {
@@ -524,7 +648,7 @@ type SessionHistoryCutoff struct {
 
 func (x *SessionHistoryCutoff) Reset() {
 	*x = SessionHistoryCutoff{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[8]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +660,7 @@ func (x *SessionHistoryCutoff) String() string {
 func (*SessionHistoryCutoff) ProtoMessage() {}
 
 func (x *SessionHistoryCutoff) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[8]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +673,7 @@ func (x *SessionHistoryCutoff) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionHistoryCutoff.ProtoReflect.Descriptor instead.
 func (*SessionHistoryCutoff) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{8}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SessionHistoryCutoff) GetHistoryId() string {
@@ -582,7 +706,7 @@ type ExportSessionHistoryRequest struct {
 
 func (x *ExportSessionHistoryRequest) Reset() {
 	*x = ExportSessionHistoryRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[9]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -594,7 +718,7 @@ func (x *ExportSessionHistoryRequest) String() string {
 func (*ExportSessionHistoryRequest) ProtoMessage() {}
 
 func (x *ExportSessionHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[9]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -607,7 +731,7 @@ func (x *ExportSessionHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportSessionHistoryRequest.ProtoReflect.Descriptor instead.
 func (*ExportSessionHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{9}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ExportSessionHistoryRequest) GetSessionId() string {
@@ -652,7 +776,7 @@ type SessionHistoryEvent struct {
 
 func (x *SessionHistoryEvent) Reset() {
 	*x = SessionHistoryEvent{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[10]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -664,7 +788,7 @@ func (x *SessionHistoryEvent) String() string {
 func (*SessionHistoryEvent) ProtoMessage() {}
 
 func (x *SessionHistoryEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[10]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,7 +801,7 @@ func (x *SessionHistoryEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionHistoryEvent.ProtoReflect.Descriptor instead.
 func (*SessionHistoryEvent) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{10}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SessionHistoryEvent) GetSequence() int64 {
@@ -728,7 +852,7 @@ type ExportSessionHistoryResponse struct {
 
 func (x *ExportSessionHistoryResponse) Reset() {
 	*x = ExportSessionHistoryResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[11]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -740,7 +864,7 @@ func (x *ExportSessionHistoryResponse) String() string {
 func (*ExportSessionHistoryResponse) ProtoMessage() {}
 
 func (x *ExportSessionHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[11]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -753,7 +877,7 @@ func (x *ExportSessionHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportSessionHistoryResponse.ProtoReflect.Descriptor instead.
 func (*ExportSessionHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{11}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ExportSessionHistoryResponse) GetCutoff() *SessionHistoryCutoff {
@@ -797,7 +921,7 @@ type ListSessionsRequest struct {
 
 func (x *ListSessionsRequest) Reset() {
 	*x = ListSessionsRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[12]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -809,7 +933,7 @@ func (x *ListSessionsRequest) String() string {
 func (*ListSessionsRequest) ProtoMessage() {}
 
 func (x *ListSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[12]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -822,7 +946,7 @@ func (x *ListSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{12}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListSessionsRequest) GetAllCreators() bool {
@@ -856,7 +980,7 @@ type ListSessionsResponse struct {
 
 func (x *ListSessionsResponse) Reset() {
 	*x = ListSessionsResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[13]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -868,7 +992,7 @@ func (x *ListSessionsResponse) String() string {
 func (*ListSessionsResponse) ProtoMessage() {}
 
 func (x *ListSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[13]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -881,7 +1005,7 @@ func (x *ListSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{13}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListSessionsResponse) GetSessions() []*Session {
@@ -910,7 +1034,7 @@ type UpdateSessionNameRequest struct {
 
 func (x *UpdateSessionNameRequest) Reset() {
 	*x = UpdateSessionNameRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[14]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -922,7 +1046,7 @@ func (x *UpdateSessionNameRequest) String() string {
 func (*UpdateSessionNameRequest) ProtoMessage() {}
 
 func (x *UpdateSessionNameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[14]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -935,7 +1059,7 @@ func (x *UpdateSessionNameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSessionNameRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSessionNameRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{14}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UpdateSessionNameRequest) GetSessionId() string {
@@ -961,7 +1085,7 @@ type UpdateSessionNameResponse struct {
 
 func (x *UpdateSessionNameResponse) Reset() {
 	*x = UpdateSessionNameResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[15]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -973,7 +1097,7 @@ func (x *UpdateSessionNameResponse) String() string {
 func (*UpdateSessionNameResponse) ProtoMessage() {}
 
 func (x *UpdateSessionNameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[15]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -986,7 +1110,7 @@ func (x *UpdateSessionNameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSessionNameResponse.ProtoReflect.Descriptor instead.
 func (*UpdateSessionNameResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{15}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UpdateSessionNameResponse) GetSession() *Session {
@@ -1005,7 +1129,7 @@ type DeleteSessionRequest struct {
 
 func (x *DeleteSessionRequest) Reset() {
 	*x = DeleteSessionRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[16]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +1141,7 @@ func (x *DeleteSessionRequest) String() string {
 func (*DeleteSessionRequest) ProtoMessage() {}
 
 func (x *DeleteSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[16]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1154,7 @@ func (x *DeleteSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSessionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSessionRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{16}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DeleteSessionRequest) GetSessionId() string {
@@ -1049,7 +1173,7 @@ type DeleteSessionResponse struct {
 
 func (x *DeleteSessionResponse) Reset() {
 	*x = DeleteSessionResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[17]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1061,7 +1185,7 @@ func (x *DeleteSessionResponse) String() string {
 func (*DeleteSessionResponse) ProtoMessage() {}
 
 func (x *DeleteSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[17]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1074,7 +1198,7 @@ func (x *DeleteSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSessionResponse.ProtoReflect.Descriptor instead.
 func (*DeleteSessionResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{17}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DeleteSessionResponse) GetSession() *Session {
@@ -1098,7 +1222,7 @@ type SessionShare struct {
 
 func (x *SessionShare) Reset() {
 	*x = SessionShare{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[18]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1110,7 +1234,7 @@ func (x *SessionShare) String() string {
 func (*SessionShare) ProtoMessage() {}
 
 func (x *SessionShare) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[18]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1123,7 +1247,7 @@ func (x *SessionShare) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionShare.ProtoReflect.Descriptor instead.
 func (*SessionShare) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{18}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SessionShare) GetId() string {
@@ -1167,7 +1291,7 @@ type CreateSessionShareRequest struct {
 
 func (x *CreateSessionShareRequest) Reset() {
 	*x = CreateSessionShareRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[19]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1179,7 +1303,7 @@ func (x *CreateSessionShareRequest) String() string {
 func (*CreateSessionShareRequest) ProtoMessage() {}
 
 func (x *CreateSessionShareRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[19]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1192,7 +1316,7 @@ func (x *CreateSessionShareRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionShareRequest.ProtoReflect.Descriptor instead.
 func (*CreateSessionShareRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{19}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CreateSessionShareRequest) GetSessionId() string {
@@ -1220,7 +1344,7 @@ type CreateSessionShareResponse struct {
 
 func (x *CreateSessionShareResponse) Reset() {
 	*x = CreateSessionShareResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[20]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1232,7 +1356,7 @@ func (x *CreateSessionShareResponse) String() string {
 func (*CreateSessionShareResponse) ProtoMessage() {}
 
 func (x *CreateSessionShareResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[20]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1245,7 +1369,7 @@ func (x *CreateSessionShareResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionShareResponse.ProtoReflect.Descriptor instead.
 func (*CreateSessionShareResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{20}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CreateSessionShareResponse) GetShare() *SessionShare {
@@ -1272,7 +1396,7 @@ type ListSessionSharesRequest struct {
 
 func (x *ListSessionSharesRequest) Reset() {
 	*x = ListSessionSharesRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[21]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1284,7 +1408,7 @@ func (x *ListSessionSharesRequest) String() string {
 func (*ListSessionSharesRequest) ProtoMessage() {}
 
 func (x *ListSessionSharesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[21]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1297,7 +1421,7 @@ func (x *ListSessionSharesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionSharesRequest.ProtoReflect.Descriptor instead.
 func (*ListSessionSharesRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{21}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ListSessionSharesRequest) GetSessionId() string {
@@ -1324,7 +1448,7 @@ type ListSessionSharesResponse struct {
 
 func (x *ListSessionSharesResponse) Reset() {
 	*x = ListSessionSharesResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[22]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1336,7 +1460,7 @@ func (x *ListSessionSharesResponse) String() string {
 func (*ListSessionSharesResponse) ProtoMessage() {}
 
 func (x *ListSessionSharesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[22]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1349,7 +1473,7 @@ func (x *ListSessionSharesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionSharesResponse.ProtoReflect.Descriptor instead.
 func (*ListSessionSharesResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{22}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ListSessionSharesResponse) GetShares() []*SessionShare {
@@ -1375,7 +1499,7 @@ type RevokeSessionShareRequest struct {
 
 func (x *RevokeSessionShareRequest) Reset() {
 	*x = RevokeSessionShareRequest{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[23]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1387,7 +1511,7 @@ func (x *RevokeSessionShareRequest) String() string {
 func (*RevokeSessionShareRequest) ProtoMessage() {}
 
 func (x *RevokeSessionShareRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[23]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1400,7 +1524,7 @@ func (x *RevokeSessionShareRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeSessionShareRequest.ProtoReflect.Descriptor instead.
 func (*RevokeSessionShareRequest) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{23}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *RevokeSessionShareRequest) GetShareId() string {
@@ -1418,7 +1542,7 @@ type RevokeSessionShareResponse struct {
 
 func (x *RevokeSessionShareResponse) Reset() {
 	*x = RevokeSessionShareResponse{}
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[24]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1430,7 +1554,7 @@ func (x *RevokeSessionShareResponse) String() string {
 func (*RevokeSessionShareResponse) ProtoMessage() {}
 
 func (x *RevokeSessionShareResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kagent_api_v1_sessions_proto_msgTypes[24]
+	mi := &file_kagent_api_v1_sessions_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,14 +1567,24 @@ func (x *RevokeSessionShareResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeSessionShareResponse.ProtoReflect.Descriptor instead.
 func (*RevokeSessionShareResponse) Descriptor() ([]byte, []int) {
-	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{24}
+	return file_kagent_api_v1_sessions_proto_rawDescGZIP(), []int{26}
 }
 
 var File_kagent_api_v1_sessions_proto protoreflect.FileDescriptor
 
 const file_kagent_api_v1_sessions_proto_rawDesc = "" +
 	"\n" +
-	"\x1ckagent/api/v1/sessions.proto\x12\rkagent.api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1akagent/api/v1/common.proto\x1a\x1bkagent/api/v1/runtime.proto\"\x82\x03\n" +
+	"\x1ckagent/api/v1/sessions.proto\x12\rkagent.api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1akagent/api/v1/common.proto\x1a\x1bkagent/api/v1/runtime.proto\"\x84\x03\n" +
+	"\x19ReadWorkspaceFilesRequest\x12'\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\tsessionId\x129\n" +
+	"\x05paths\x18\x02 \x03(\tB#\xbaH \x92\x01\x1d\b\x01\x10\x04\x18\x01\"\x15r\x13\x10\x01\x18\x80 2\f^[^\\x00\\\\]+$R\x05paths\x12:\n" +
+	"\x15expected_head_task_id\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x12expectedHeadTaskId:\xc6\x01\xbaH\xc2\x01\x1a\xbf\x01\n" +
+	"\x18workspace.relative_paths\x120paths must be canonical relative workspace paths\x1aqthis.paths.all(p, !p.startsWith('/') && !p.endsWith('/') && !p.contains('//') && !p.matches('(^|/)\\\\.\\\\.?(/|$)'))\"`\n" +
+	"\x1aReadWorkspaceFilesResponse\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x18\n" +
+	"\amissing\x18\x03 \x01(\bR\amissing\"\x82\x03\n" +
 	"\x18ReadWorkspaceFileRequest\x12'\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\tsessionId\x12,\n" +
@@ -1559,7 +1693,7 @@ const file_kagent_api_v1_sessions_proto_rawDesc = "" +
 	"\x04page\x18\x02 \x01(\v2\x1b.kagent.api.v1.PageResponseR\x04page\"@\n" +
 	"\x19RevokeSessionShareRequest\x12#\n" +
 	"\bshare_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\ashareId\"\x1c\n" +
-	"\x1aRevokeSessionShareResponse2\xf5\a\n" +
+	"\x1aRevokeSessionShareResponse2\xe2\b\n" +
 	"\x0eSessionService\x12Z\n" +
 	"\rCreateSession\x12#.kagent.api.v1.CreateSessionRequest\x1a$.kagent.api.v1.CreateSessionResponse\x12Q\n" +
 	"\n" +
@@ -1571,7 +1705,8 @@ const file_kagent_api_v1_sessions_proto_rawDesc = "" +
 	"\x12CreateSessionShare\x12(.kagent.api.v1.CreateSessionShareRequest\x1a).kagent.api.v1.CreateSessionShareResponse\x12f\n" +
 	"\x11ListSessionShares\x12'.kagent.api.v1.ListSessionSharesRequest\x1a(.kagent.api.v1.ListSessionSharesResponse\x12i\n" +
 	"\x12RevokeSessionShare\x12(.kagent.api.v1.RevokeSessionShareRequest\x1a).kagent.api.v1.RevokeSessionShareResponse\x12h\n" +
-	"\x11ReadWorkspaceFile\x12'.kagent.api.v1.ReadWorkspaceFileRequest\x1a(.kagent.api.v1.ReadWorkspaceFileResponse0\x01B=Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1b\x06proto3"
+	"\x11ReadWorkspaceFile\x12'.kagent.api.v1.ReadWorkspaceFileRequest\x1a(.kagent.api.v1.ReadWorkspaceFileResponse0\x01\x12k\n" +
+	"\x12ReadWorkspaceFiles\x12(.kagent.api.v1.ReadWorkspaceFilesRequest\x1a).kagent.api.v1.ReadWorkspaceFilesResponse0\x01B=Z;github.com/kagent-dev/kagent/go/api/gen/kagent/api/v1;apiv1b\x06proto3"
 
 var (
 	file_kagent_api_v1_sessions_proto_rawDescOnce sync.Once
@@ -1585,90 +1720,94 @@ func file_kagent_api_v1_sessions_proto_rawDescGZIP() []byte {
 	return file_kagent_api_v1_sessions_proto_rawDescData
 }
 
-var file_kagent_api_v1_sessions_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_kagent_api_v1_sessions_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_kagent_api_v1_sessions_proto_goTypes = []any{
-	(*ReadWorkspaceFileRequest)(nil),     // 0: kagent.api.v1.ReadWorkspaceFileRequest
-	(*ReadWorkspaceFileResponse)(nil),    // 1: kagent.api.v1.ReadWorkspaceFileResponse
-	(*Failure)(nil),                      // 2: kagent.api.v1.Failure
-	(*Session)(nil),                      // 3: kagent.api.v1.Session
-	(*CreateSessionRequest)(nil),         // 4: kagent.api.v1.CreateSessionRequest
-	(*CreateSessionResponse)(nil),        // 5: kagent.api.v1.CreateSessionResponse
-	(*GetSessionRequest)(nil),            // 6: kagent.api.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),           // 7: kagent.api.v1.GetSessionResponse
-	(*SessionHistoryCutoff)(nil),         // 8: kagent.api.v1.SessionHistoryCutoff
-	(*ExportSessionHistoryRequest)(nil),  // 9: kagent.api.v1.ExportSessionHistoryRequest
-	(*SessionHistoryEvent)(nil),          // 10: kagent.api.v1.SessionHistoryEvent
-	(*ExportSessionHistoryResponse)(nil), // 11: kagent.api.v1.ExportSessionHistoryResponse
-	(*ListSessionsRequest)(nil),          // 12: kagent.api.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),         // 13: kagent.api.v1.ListSessionsResponse
-	(*UpdateSessionNameRequest)(nil),     // 14: kagent.api.v1.UpdateSessionNameRequest
-	(*UpdateSessionNameResponse)(nil),    // 15: kagent.api.v1.UpdateSessionNameResponse
-	(*DeleteSessionRequest)(nil),         // 16: kagent.api.v1.DeleteSessionRequest
-	(*DeleteSessionResponse)(nil),        // 17: kagent.api.v1.DeleteSessionResponse
-	(*SessionShare)(nil),                 // 18: kagent.api.v1.SessionShare
-	(*CreateSessionShareRequest)(nil),    // 19: kagent.api.v1.CreateSessionShareRequest
-	(*CreateSessionShareResponse)(nil),   // 20: kagent.api.v1.CreateSessionShareResponse
-	(*ListSessionSharesRequest)(nil),     // 21: kagent.api.v1.ListSessionSharesRequest
-	(*ListSessionSharesResponse)(nil),    // 22: kagent.api.v1.ListSessionSharesResponse
-	(*RevokeSessionShareRequest)(nil),    // 23: kagent.api.v1.RevokeSessionShareRequest
-	(*RevokeSessionShareResponse)(nil),   // 24: kagent.api.v1.RevokeSessionShareResponse
-	(*ResourceReference)(nil),            // 25: kagent.api.v1.ResourceReference
-	(RuntimeState)(0),                    // 26: kagent.api.v1.RuntimeState
-	(RuntimeOperation)(0),                // 27: kagent.api.v1.RuntimeOperation
-	(*timestamppb.Timestamp)(nil),        // 28: google.protobuf.Timestamp
-	(*PageRequest)(nil),                  // 29: kagent.api.v1.PageRequest
-	(*PageResponse)(nil),                 // 30: kagent.api.v1.PageResponse
-	(*durationpb.Duration)(nil),          // 31: google.protobuf.Duration
+	(*ReadWorkspaceFilesRequest)(nil),    // 0: kagent.api.v1.ReadWorkspaceFilesRequest
+	(*ReadWorkspaceFilesResponse)(nil),   // 1: kagent.api.v1.ReadWorkspaceFilesResponse
+	(*ReadWorkspaceFileRequest)(nil),     // 2: kagent.api.v1.ReadWorkspaceFileRequest
+	(*ReadWorkspaceFileResponse)(nil),    // 3: kagent.api.v1.ReadWorkspaceFileResponse
+	(*Failure)(nil),                      // 4: kagent.api.v1.Failure
+	(*Session)(nil),                      // 5: kagent.api.v1.Session
+	(*CreateSessionRequest)(nil),         // 6: kagent.api.v1.CreateSessionRequest
+	(*CreateSessionResponse)(nil),        // 7: kagent.api.v1.CreateSessionResponse
+	(*GetSessionRequest)(nil),            // 8: kagent.api.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),           // 9: kagent.api.v1.GetSessionResponse
+	(*SessionHistoryCutoff)(nil),         // 10: kagent.api.v1.SessionHistoryCutoff
+	(*ExportSessionHistoryRequest)(nil),  // 11: kagent.api.v1.ExportSessionHistoryRequest
+	(*SessionHistoryEvent)(nil),          // 12: kagent.api.v1.SessionHistoryEvent
+	(*ExportSessionHistoryResponse)(nil), // 13: kagent.api.v1.ExportSessionHistoryResponse
+	(*ListSessionsRequest)(nil),          // 14: kagent.api.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),         // 15: kagent.api.v1.ListSessionsResponse
+	(*UpdateSessionNameRequest)(nil),     // 16: kagent.api.v1.UpdateSessionNameRequest
+	(*UpdateSessionNameResponse)(nil),    // 17: kagent.api.v1.UpdateSessionNameResponse
+	(*DeleteSessionRequest)(nil),         // 18: kagent.api.v1.DeleteSessionRequest
+	(*DeleteSessionResponse)(nil),        // 19: kagent.api.v1.DeleteSessionResponse
+	(*SessionShare)(nil),                 // 20: kagent.api.v1.SessionShare
+	(*CreateSessionShareRequest)(nil),    // 21: kagent.api.v1.CreateSessionShareRequest
+	(*CreateSessionShareResponse)(nil),   // 22: kagent.api.v1.CreateSessionShareResponse
+	(*ListSessionSharesRequest)(nil),     // 23: kagent.api.v1.ListSessionSharesRequest
+	(*ListSessionSharesResponse)(nil),    // 24: kagent.api.v1.ListSessionSharesResponse
+	(*RevokeSessionShareRequest)(nil),    // 25: kagent.api.v1.RevokeSessionShareRequest
+	(*RevokeSessionShareResponse)(nil),   // 26: kagent.api.v1.RevokeSessionShareResponse
+	(*ResourceReference)(nil),            // 27: kagent.api.v1.ResourceReference
+	(RuntimeState)(0),                    // 28: kagent.api.v1.RuntimeState
+	(RuntimeOperation)(0),                // 29: kagent.api.v1.RuntimeOperation
+	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
+	(*PageRequest)(nil),                  // 31: kagent.api.v1.PageRequest
+	(*PageResponse)(nil),                 // 32: kagent.api.v1.PageResponse
+	(*durationpb.Duration)(nil),          // 33: google.protobuf.Duration
 }
 var file_kagent_api_v1_sessions_proto_depIdxs = []int32{
-	25, // 0: kagent.api.v1.Session.agent:type_name -> kagent.api.v1.ResourceReference
-	26, // 1: kagent.api.v1.Session.state:type_name -> kagent.api.v1.RuntimeState
-	27, // 2: kagent.api.v1.Session.operation:type_name -> kagent.api.v1.RuntimeOperation
-	2,  // 3: kagent.api.v1.Session.failure:type_name -> kagent.api.v1.Failure
-	28, // 4: kagent.api.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	28, // 5: kagent.api.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
-	25, // 6: kagent.api.v1.CreateSessionRequest.agent:type_name -> kagent.api.v1.ResourceReference
-	3,  // 7: kagent.api.v1.CreateSessionResponse.session:type_name -> kagent.api.v1.Session
-	3,  // 8: kagent.api.v1.GetSessionResponse.session:type_name -> kagent.api.v1.Session
-	8,  // 9: kagent.api.v1.ExportSessionHistoryRequest.cutoff:type_name -> kagent.api.v1.SessionHistoryCutoff
-	28, // 10: kagent.api.v1.SessionHistoryEvent.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 11: kagent.api.v1.ExportSessionHistoryResponse.cutoff:type_name -> kagent.api.v1.SessionHistoryCutoff
-	10, // 12: kagent.api.v1.ExportSessionHistoryResponse.events:type_name -> kagent.api.v1.SessionHistoryEvent
-	29, // 13: kagent.api.v1.ListSessionsRequest.page:type_name -> kagent.api.v1.PageRequest
-	25, // 14: kagent.api.v1.ListSessionsRequest.agent:type_name -> kagent.api.v1.ResourceReference
-	3,  // 15: kagent.api.v1.ListSessionsResponse.sessions:type_name -> kagent.api.v1.Session
-	30, // 16: kagent.api.v1.ListSessionsResponse.page:type_name -> kagent.api.v1.PageResponse
-	3,  // 17: kagent.api.v1.UpdateSessionNameResponse.session:type_name -> kagent.api.v1.Session
-	3,  // 18: kagent.api.v1.DeleteSessionResponse.session:type_name -> kagent.api.v1.Session
-	28, // 19: kagent.api.v1.SessionShare.created_at:type_name -> google.protobuf.Timestamp
-	28, // 20: kagent.api.v1.SessionShare.expires_at:type_name -> google.protobuf.Timestamp
-	31, // 21: kagent.api.v1.CreateSessionShareRequest.ttl:type_name -> google.protobuf.Duration
-	18, // 22: kagent.api.v1.CreateSessionShareResponse.share:type_name -> kagent.api.v1.SessionShare
-	29, // 23: kagent.api.v1.ListSessionSharesRequest.page:type_name -> kagent.api.v1.PageRequest
-	18, // 24: kagent.api.v1.ListSessionSharesResponse.shares:type_name -> kagent.api.v1.SessionShare
-	30, // 25: kagent.api.v1.ListSessionSharesResponse.page:type_name -> kagent.api.v1.PageResponse
-	4,  // 26: kagent.api.v1.SessionService.CreateSession:input_type -> kagent.api.v1.CreateSessionRequest
-	6,  // 27: kagent.api.v1.SessionService.GetSession:input_type -> kagent.api.v1.GetSessionRequest
-	9,  // 28: kagent.api.v1.SessionService.ExportSessionHistory:input_type -> kagent.api.v1.ExportSessionHistoryRequest
-	12, // 29: kagent.api.v1.SessionService.ListSessions:input_type -> kagent.api.v1.ListSessionsRequest
-	14, // 30: kagent.api.v1.SessionService.UpdateSessionName:input_type -> kagent.api.v1.UpdateSessionNameRequest
-	16, // 31: kagent.api.v1.SessionService.DeleteSession:input_type -> kagent.api.v1.DeleteSessionRequest
-	19, // 32: kagent.api.v1.SessionService.CreateSessionShare:input_type -> kagent.api.v1.CreateSessionShareRequest
-	21, // 33: kagent.api.v1.SessionService.ListSessionShares:input_type -> kagent.api.v1.ListSessionSharesRequest
-	23, // 34: kagent.api.v1.SessionService.RevokeSessionShare:input_type -> kagent.api.v1.RevokeSessionShareRequest
-	0,  // 35: kagent.api.v1.SessionService.ReadWorkspaceFile:input_type -> kagent.api.v1.ReadWorkspaceFileRequest
-	5,  // 36: kagent.api.v1.SessionService.CreateSession:output_type -> kagent.api.v1.CreateSessionResponse
-	7,  // 37: kagent.api.v1.SessionService.GetSession:output_type -> kagent.api.v1.GetSessionResponse
-	11, // 38: kagent.api.v1.SessionService.ExportSessionHistory:output_type -> kagent.api.v1.ExportSessionHistoryResponse
-	13, // 39: kagent.api.v1.SessionService.ListSessions:output_type -> kagent.api.v1.ListSessionsResponse
-	15, // 40: kagent.api.v1.SessionService.UpdateSessionName:output_type -> kagent.api.v1.UpdateSessionNameResponse
-	17, // 41: kagent.api.v1.SessionService.DeleteSession:output_type -> kagent.api.v1.DeleteSessionResponse
-	20, // 42: kagent.api.v1.SessionService.CreateSessionShare:output_type -> kagent.api.v1.CreateSessionShareResponse
-	22, // 43: kagent.api.v1.SessionService.ListSessionShares:output_type -> kagent.api.v1.ListSessionSharesResponse
-	24, // 44: kagent.api.v1.SessionService.RevokeSessionShare:output_type -> kagent.api.v1.RevokeSessionShareResponse
-	1,  // 45: kagent.api.v1.SessionService.ReadWorkspaceFile:output_type -> kagent.api.v1.ReadWorkspaceFileResponse
-	36, // [36:46] is the sub-list for method output_type
-	26, // [26:36] is the sub-list for method input_type
+	27, // 0: kagent.api.v1.Session.agent:type_name -> kagent.api.v1.ResourceReference
+	28, // 1: kagent.api.v1.Session.state:type_name -> kagent.api.v1.RuntimeState
+	29, // 2: kagent.api.v1.Session.operation:type_name -> kagent.api.v1.RuntimeOperation
+	4,  // 3: kagent.api.v1.Session.failure:type_name -> kagent.api.v1.Failure
+	30, // 4: kagent.api.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	30, // 5: kagent.api.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
+	27, // 6: kagent.api.v1.CreateSessionRequest.agent:type_name -> kagent.api.v1.ResourceReference
+	5,  // 7: kagent.api.v1.CreateSessionResponse.session:type_name -> kagent.api.v1.Session
+	5,  // 8: kagent.api.v1.GetSessionResponse.session:type_name -> kagent.api.v1.Session
+	10, // 9: kagent.api.v1.ExportSessionHistoryRequest.cutoff:type_name -> kagent.api.v1.SessionHistoryCutoff
+	30, // 10: kagent.api.v1.SessionHistoryEvent.created_at:type_name -> google.protobuf.Timestamp
+	10, // 11: kagent.api.v1.ExportSessionHistoryResponse.cutoff:type_name -> kagent.api.v1.SessionHistoryCutoff
+	12, // 12: kagent.api.v1.ExportSessionHistoryResponse.events:type_name -> kagent.api.v1.SessionHistoryEvent
+	31, // 13: kagent.api.v1.ListSessionsRequest.page:type_name -> kagent.api.v1.PageRequest
+	27, // 14: kagent.api.v1.ListSessionsRequest.agent:type_name -> kagent.api.v1.ResourceReference
+	5,  // 15: kagent.api.v1.ListSessionsResponse.sessions:type_name -> kagent.api.v1.Session
+	32, // 16: kagent.api.v1.ListSessionsResponse.page:type_name -> kagent.api.v1.PageResponse
+	5,  // 17: kagent.api.v1.UpdateSessionNameResponse.session:type_name -> kagent.api.v1.Session
+	5,  // 18: kagent.api.v1.DeleteSessionResponse.session:type_name -> kagent.api.v1.Session
+	30, // 19: kagent.api.v1.SessionShare.created_at:type_name -> google.protobuf.Timestamp
+	30, // 20: kagent.api.v1.SessionShare.expires_at:type_name -> google.protobuf.Timestamp
+	33, // 21: kagent.api.v1.CreateSessionShareRequest.ttl:type_name -> google.protobuf.Duration
+	20, // 22: kagent.api.v1.CreateSessionShareResponse.share:type_name -> kagent.api.v1.SessionShare
+	31, // 23: kagent.api.v1.ListSessionSharesRequest.page:type_name -> kagent.api.v1.PageRequest
+	20, // 24: kagent.api.v1.ListSessionSharesResponse.shares:type_name -> kagent.api.v1.SessionShare
+	32, // 25: kagent.api.v1.ListSessionSharesResponse.page:type_name -> kagent.api.v1.PageResponse
+	6,  // 26: kagent.api.v1.SessionService.CreateSession:input_type -> kagent.api.v1.CreateSessionRequest
+	8,  // 27: kagent.api.v1.SessionService.GetSession:input_type -> kagent.api.v1.GetSessionRequest
+	11, // 28: kagent.api.v1.SessionService.ExportSessionHistory:input_type -> kagent.api.v1.ExportSessionHistoryRequest
+	14, // 29: kagent.api.v1.SessionService.ListSessions:input_type -> kagent.api.v1.ListSessionsRequest
+	16, // 30: kagent.api.v1.SessionService.UpdateSessionName:input_type -> kagent.api.v1.UpdateSessionNameRequest
+	18, // 31: kagent.api.v1.SessionService.DeleteSession:input_type -> kagent.api.v1.DeleteSessionRequest
+	21, // 32: kagent.api.v1.SessionService.CreateSessionShare:input_type -> kagent.api.v1.CreateSessionShareRequest
+	23, // 33: kagent.api.v1.SessionService.ListSessionShares:input_type -> kagent.api.v1.ListSessionSharesRequest
+	25, // 34: kagent.api.v1.SessionService.RevokeSessionShare:input_type -> kagent.api.v1.RevokeSessionShareRequest
+	2,  // 35: kagent.api.v1.SessionService.ReadWorkspaceFile:input_type -> kagent.api.v1.ReadWorkspaceFileRequest
+	0,  // 36: kagent.api.v1.SessionService.ReadWorkspaceFiles:input_type -> kagent.api.v1.ReadWorkspaceFilesRequest
+	7,  // 37: kagent.api.v1.SessionService.CreateSession:output_type -> kagent.api.v1.CreateSessionResponse
+	9,  // 38: kagent.api.v1.SessionService.GetSession:output_type -> kagent.api.v1.GetSessionResponse
+	13, // 39: kagent.api.v1.SessionService.ExportSessionHistory:output_type -> kagent.api.v1.ExportSessionHistoryResponse
+	15, // 40: kagent.api.v1.SessionService.ListSessions:output_type -> kagent.api.v1.ListSessionsResponse
+	17, // 41: kagent.api.v1.SessionService.UpdateSessionName:output_type -> kagent.api.v1.UpdateSessionNameResponse
+	19, // 42: kagent.api.v1.SessionService.DeleteSession:output_type -> kagent.api.v1.DeleteSessionResponse
+	22, // 43: kagent.api.v1.SessionService.CreateSessionShare:output_type -> kagent.api.v1.CreateSessionShareResponse
+	24, // 44: kagent.api.v1.SessionService.ListSessionShares:output_type -> kagent.api.v1.ListSessionSharesResponse
+	26, // 45: kagent.api.v1.SessionService.RevokeSessionShare:output_type -> kagent.api.v1.RevokeSessionShareResponse
+	3,  // 46: kagent.api.v1.SessionService.ReadWorkspaceFile:output_type -> kagent.api.v1.ReadWorkspaceFileResponse
+	1,  // 47: kagent.api.v1.SessionService.ReadWorkspaceFiles:output_type -> kagent.api.v1.ReadWorkspaceFilesResponse
+	37, // [37:48] is the sub-list for method output_type
+	26, // [26:37] is the sub-list for method input_type
 	26, // [26:26] is the sub-list for extension type_name
 	26, // [26:26] is the sub-list for extension extendee
 	0,  // [0:26] is the sub-list for field type_name
@@ -1681,14 +1820,14 @@ func file_kagent_api_v1_sessions_proto_init() {
 	}
 	file_kagent_api_v1_common_proto_init()
 	file_kagent_api_v1_runtime_proto_init()
-	file_kagent_api_v1_sessions_proto_msgTypes[10].OneofWrappers = []any{}
+	file_kagent_api_v1_sessions_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kagent_api_v1_sessions_proto_rawDesc), len(file_kagent_api_v1_sessions_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

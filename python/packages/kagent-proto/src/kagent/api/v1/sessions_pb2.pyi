@@ -13,6 +13,26 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class ReadWorkspaceFilesRequest(_message.Message):
+    __slots__ = ("session_id", "paths", "expected_head_task_id")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    PATHS_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_HEAD_TASK_ID_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    paths: _containers.RepeatedScalarFieldContainer[str]
+    expected_head_task_id: str
+    def __init__(self, session_id: _Optional[str] = ..., paths: _Optional[_Iterable[str]] = ..., expected_head_task_id: _Optional[str] = ...) -> None: ...
+
+class ReadWorkspaceFilesResponse(_message.Message):
+    __slots__ = ("path", "chunk", "missing")
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    CHUNK_FIELD_NUMBER: _ClassVar[int]
+    MISSING_FIELD_NUMBER: _ClassVar[int]
+    path: str
+    chunk: bytes
+    missing: bool
+    def __init__(self, path: _Optional[str] = ..., chunk: _Optional[bytes] = ..., missing: _Optional[bool] = ...) -> None: ...
+
 class ReadWorkspaceFileRequest(_message.Message):
     __slots__ = ("session_id", "path", "expected_head_task_id")
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]

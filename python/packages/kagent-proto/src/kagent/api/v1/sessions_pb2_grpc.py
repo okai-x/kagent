@@ -69,6 +69,11 @@ class SessionServiceStub:
                 request_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileRequest.SerializeToString,
                 response_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileResponse.FromString,
                 _registered_method=True)
+        self.ReadWorkspaceFiles = channel.unary_stream(
+                '/kagent.api.v1.SessionService/ReadWorkspaceFiles',
+                request_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesRequest.SerializeToString,
+                response_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesResponse.FromString,
+                _registered_method=True)
 
 
 class SessionServiceServicer:
@@ -146,6 +151,15 @@ class SessionServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadWorkspaceFiles(self, request, context):
+        """Collects up to four files at the same terminal boundary and suspends once.
+        All runtime reads and the durable snapshot complete before any response.
+        Discard the entire batch unless the stream finishes with OK.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SessionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -198,6 +212,11 @@ def add_SessionServiceServicer_to_server(servicer, server):
                     servicer.ReadWorkspaceFile,
                     request_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileRequest.FromString,
                     response_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileResponse.SerializeToString,
+            ),
+            'ReadWorkspaceFiles': grpc.unary_stream_rpc_method_handler(
+                    servicer.ReadWorkspaceFiles,
+                    request_deserializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesRequest.FromString,
+                    response_serializer=kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -475,6 +494,33 @@ class SessionService:
             '/kagent.api.v1.SessionService/ReadWorkspaceFile',
             kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileRequest.SerializeToString,
             kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFileResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadWorkspaceFiles(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/kagent.api.v1.SessionService/ReadWorkspaceFiles',
+            kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesRequest.SerializeToString,
+            kagent_dot_api_dot_v1_dot_sessions__pb2.ReadWorkspaceFilesResponse.FromString,
             options,
             channel_credentials,
             insecure,

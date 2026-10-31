@@ -318,6 +318,31 @@ A file-missing response carries `ErrorInfo` reason `WORKSPACE_FILE_NOT_FOUND` on
 after successful cleanup; a missing Session is a different failure. A successful
 public EOF is required before consumers publish the file.
 
+`ReadWorkspaceFiles` accepts one to four distinct canonical paths at the same
+settled head. Each private read gets a fresh single-use grant, without releasing
+Session admission between files. Grant rotation requires the previous definite
+read, current executor, Actor UID, live cleanup lease and original read deadline.
+A lost rotation result stops the batch without issuing another private read.
+After all definite reads, the batch suspends and records a snapshot once, then
+streams files in request order. An empty file has an empty chunk; a missing file
+has one `missing` marker and no bytes. A non-NotFound error fails the whole batch;
+NotFound after partial bytes is also rejected. Consumers require exact path
+coverage and final OK before publishing. Cancellation drains the current read
+and performs cleanup but starts no further files. The legacy single-file RPC
+uses the same implementation and preserves its empty-stream/NotFound contract.
+
+Both endpoints reserve spool capacity before admission from a shared 256 MiB
+weighted budget (64 MiB per requested path); temporary files are all allocated
+before any private read. Requests waiting for capacity remain cancelable and do
+not block their Session. Spool files are removed before releasing capacity.
+
+Only a database rejection of `BeginWorkspaceAccess` carries FailedPrecondition
+with `ErrorInfo(reason=WORKSPACE_ADMISSION_REJECTED, domain=kagent.dev)`. It proves
+that this call issued no private read or suspension, not that another operation
+will recover. Clients may retry this rejection finitely, only before receiving
+any response, within their overall deadline. Errors after admission never carry
+this reason. Unknown outcomes remain fenced and must not trigger replay.
+
 The controller requires a writable temporary directory for this spool. The Helm
 chart mounts the disk-backed `workspace-downloads` emptyDir at `/tmp` with a
 512 MiB size limit, preserving `runAsNonRoot` and `readOnlyRootFilesystem`.

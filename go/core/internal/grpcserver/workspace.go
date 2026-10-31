@@ -22,6 +22,13 @@ func (s *sessionServer) ReadWorkspaceFile(request *apiv1.ReadWorkspaceFileReques
 	})
 }
 
+func (s *sessionServer) ReadWorkspaceFiles(request *apiv1.ReadWorkspaceFilesRequest, stream grpc.ServerStreamingServer[apiv1.ReadWorkspaceFilesResponse]) error {
+	if s.workspace == nil {
+		return status.Error(codes.Unavailable, "Workspace downloads are not configured")
+	}
+	return s.workspace.ReadFiles(stream.Context(), request, stream.Send)
+}
+
 type workspaceAccessServer struct {
 	runtimev1.UnimplementedWorkspaceAccessServiceServer
 	service *sessionsvc.WorkspaceService
