@@ -22,6 +22,53 @@ helm install kagent ./helm/kagent/ --namespace kagent --set providers.default=az
 helm install kagent ./helm/kagent/ --namespace kagent --set providers.default=mistral      --set providers.mistral.apiKey=your-mistral-api-key
 ```
 
+### Internal HTTPS for product services
+
+`config.server.tls` enables an additional HTTPS listener that serves native gRPC,
+HTTP MCP, and A2A with the same authentication and authorization as the existing
+listener. It is disabled by default. For example:
+
+```yaml
+config:
+  server:
+    auth:
+      mode: service-account
+      serviceAccount:
+        authority: production-cluster
+    tls:
+      bindAddress: ":8444"
+      certFile: /run/kagent-serving/credential-bundle.pem
+      keyFile: /run/kagent-serving/credential-bundle.pem
+controller:
+  volumes:
+    - name: serving-certificate
+      projected:
+        sources:
+          - podCertificate:
+              signerName: servicedns.podcert.ate.dev/identity
+              keyType: ECDSAP256
+              credentialBundlePath: credential-bundle.pem
+  volumeMounts:
+    - name: serving-certificate
+      mountPath: /run/kagent-serving
+      readOnly: true
+```
+
+The certificate controller must already be installed. Certificates reload at
+each TLS handshake; invalid or unreadable replacement files fail the handshake.
+Both files are required, and may point to the same projected credential bundle.
+The chart adds the configured TLS port to the controller Service. Substrate's
+ServiceDNS certificates cover `<service>.<namespace>.svc`; use that hostname for
+product clients and mount its ServiceDNS trust bundle into their TLS trust store.
+For the Python SDK, set `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` to that bundle before
+starting the process. Plan CA rotation with client restarts to refresh trust.
+
+Actor callback URLs and health probes retain the existing plaintext listener.
+Use NetworkPolicy to restrict that port to the required platform callers, and
+permit product services to reach only the TLS port. Enabling TLS does not add a
+service-account allowlist: token issuance and network access remain operator
+responsibilities. Both listeners must bind successfully before either serves.
+
 ### PostgreSQL
 
 The Kagent chart does not deploy or initialize PostgreSQL, and it does not install Substrate. A direct Helm install needs a prepared database, a connection Secret in the Kagent namespace, and Substrate installed as its own release.

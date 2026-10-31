@@ -89,3 +89,31 @@ tests:
       - lengthEqual:
           path: spec.ports
           count: 1
+
+  - it: should add an HTTPS port without replacing the actor callback port
+    set:
+      config.server.tls:
+        bindAddress: ":8444"
+        certFile: /run/serving.pem
+        keyFile: /run/serving.pem
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 8083
+      - equal:
+          path: spec.ports[1]
+          value:
+            port: 8444
+            targetPort: https
+            protocol: TCP
+            name: https
+
+  - it: should reject an invalid HTTPS port
+    set:
+      config.server.tls:
+        bindAddress: ":70000"
+        certFile: /run/serving.pem
+        keyFile: /run/serving.pem
+    asserts:
+      - failedTemplate:
+          errorMessage: config.server.tls.bindAddress must end in a TCP port between 1 and 65535

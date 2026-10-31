@@ -16,5 +16,11 @@ spec:
       targetPort: {{ .Values.controller.service.ports.targetPort }}
       protocol: TCP
       name: controller
+    {{- if .Values.config.server.tls }}
+    - port: {{ include "kagent.controller.tlsPort" . | int }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    {{- end }}
   selector:
     {{- include "kagent.controller.selectorLabels" . | nindent 4 }}

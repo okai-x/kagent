@@ -79,6 +79,10 @@ func ResolveControllerPaths(cfg *configv1.ControllerConfig, path string) {
 	cfg.Push.SigningPrivateKeyFile = FilePath(path, cfg.Push.SigningPrivateKeyFile)
 	cfg.Substrate.CaFile = FilePath(path, cfg.Substrate.CaFile)
 	cfg.Substrate.ClientCertFile = FilePath(path, cfg.Substrate.ClientCertFile)
+	if servingTLS := cfg.GetServer().GetTls(); servingTLS != nil {
+		servingTLS.CertFile = FilePath(path, servingTLS.CertFile)
+		servingTLS.KeyFile = FilePath(path, servingTLS.KeyFile)
+	}
 }
 
 // ResolveCLIPaths does not open referenced files: unrelated commands need no

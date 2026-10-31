@@ -252,6 +252,14 @@ disable sentinel is in use; callers must consult
 {{- regexFind "[0-9]+$" (.Values.config.metrics.bindAddress | toString) -}}
 {{- end -}}
 
+{{- define "kagent.controller.tlsPort" -}}
+{{- $port := regexFind "[0-9]+$" (.Values.config.server.tls.bindAddress | toString) -}}
+{{- if or (not $port) (lt (int $port) 1) (gt (int $port) 65535) -}}
+{{- fail "config.server.tls.bindAddress must end in a TCP port between 1 and 65535" -}}
+{{- end -}}
+{{- $port -}}
+{{- end -}}
+
 {{/*
 Returns "1" when the controller metrics resources (Service, RBAC,
 container port, env vars) should render, empty otherwise. Honours both
